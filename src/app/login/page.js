@@ -1,6 +1,8 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
+import { Box, Typography, TextField, Button, Checkbox, FormControlLabel } from "@mui/material";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -10,7 +12,6 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle login logic here
     console.log("Login attempt:", formData);
     alert("Login functionality will be implemented with backend!");
   };
@@ -23,78 +24,137 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-pink-50 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-pink-600">🍰 Sweet Dreams</h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Welcome Back!</h2>
-          <p className="text-gray-600">Sign in to your account</p>
-        </div>
+    <Box
+      sx={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
+        bgcolor: "#f0f0f0"
+      }}
+    >
+      {/* Background Image with blur */}
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url('/cc.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(8px)", // Adjust this value to control blur amount
+          zIndex: 0
+        }}
+      />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Enter your email"
-            />
-          </div>
+      {/* Optional dark overlay for contrast */}
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          bgcolor: "rgba(0,0,0,0.25)", // adjust darkness here
+          zIndex: 1
+        }}
+      />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Enter your password"
-            />
-          </div>
+      {/* Form container */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          position: "relative",
+          zIndex: 2,
+          width: "100%",
+          maxWidth: 400,
+          px: 4,
+          py: 6,
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+          color: "white"
+          // No background or card styling here, fully transparent
+        }}
+      >
+        <Typography variant="h3" fontWeight="bold" color="#f06292" textAlign="center" gutterBottom>
+           Sweet Dreams
+        </Typography>
+        <Typography variant="h5" fontWeight="medium" color="white" textAlign="center" gutterBottom>
+          Welcome Back!
+        </Typography>
+        <Typography variant="body1" textAlign="center" color="white" mb={2}>
+          Sign in to your account
+        </Typography>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span className="text-sm text-gray-600">Remember me</span>
-            </label>
-            <a href="#" className="text-sm text-pink-600 hover:text-pink-800">
-              Forgot password?
-            </a>
-          </div>
+        <TextField
+          variant="filled"
+          name="email"
+          label="Email Address"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          InputLabelProps={{ style: { color: "white" } }}
+          sx={{
+            input: { color: "white" },
+            backgroundColor: "rgba(255,255,255,0.1)",
+            borderRadius: 1,
+            "& .MuiFilledInput-underline:before": { borderBottomColor: "rgba(255,255,255,0.3)" },
+            "& .MuiFilledInput-underline:hover:before": { borderBottomColor: "white" }
+          }}
+        />
 
-          <button
-            type="submit"
-            className="w-full bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500"
-          >
-            Sign In
-          </button>
-        </form>
+        <TextField
+          variant="filled"
+          name="password"
+          label="Password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          InputLabelProps={{ style: { color: "white" } }}
+          sx={{
+            input: { color: "white" },
+            backgroundColor: "rgba(255,255,255,0.1)",
+            borderRadius: 1,
+            "& .MuiFilledInput-underline:before": { borderBottomColor: "rgba(255,255,255,0.3)" },
+            "& .MuiFilledInput-underline:hover:before": { borderBottomColor: "white" }
+          }}
+        />
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-pink-600 hover:text-pink-800 font-medium">
-              Sign up here
-            </Link>
-          </p>
-        </div>
+        <FormControlLabel
+          control={<Checkbox sx={{ color: "white" }} />}
+          label={<Typography color="white" fontSize={14}>Remember me</Typography>}
+          sx={{ alignSelf: "start" }}
+        />
 
-        <div className="mt-4 text-center">
-          <Link href="/" className="text-pink-600 hover:text-pink-800">
+        <Button
+          type="submit"
+          variant="contained"
+          sx={{
+            bgcolor: "#f06292",
+            "&:hover": { bgcolor: "#ec407a" },
+            color: "white",
+            py: 1.5,
+            fontWeight: "bold"
+          }}
+        >
+          Sign In
+        </Button>
+
+        <Box textAlign="center" color="white" mt={2} fontSize={14}>
+          Don't have an account?{" "}
+          <Link href="/signup" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+            Sign up here
+          </Link>
+        </Box>
+
+        <Box textAlign="center" color="white" mt={1} fontSize={14}>
+          <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
             ← Back to Home
           </Link>
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

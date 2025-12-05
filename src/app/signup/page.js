@@ -34,12 +34,23 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-pink-50 flex items-center justify-center py-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-pink-600">🍰 Sweet Dreams</h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mt-4">Join Us!</h2>
-          <p className="text-gray-600">Create your account</p>
+      <div className="flex items-center gap-8">
+        {/* Avatar beside the card */}
+        <div className="flex-shrink-0">
+          <img 
+            src="/mann.jpg" 
+            alt="Avatar" 
+            className="w-32 h-32 rounded-full object-cover border-4 border-pink-200 shadow-lg"
+          />
         </div>
+        
+        {/* Signup Card */}
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-pink-600">🍰 Sweet Dreams</h1>
+            <h2 className="text-2xl font-semibold text-gray-800 mt-4">Join Us!</h2>
+            <p className="text-gray-600">Create your account</p>
+          </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -160,6 +171,7 @@ export default function Signup() {
           <Link href="/" className="text-pink-600 hover:text-pink-800">
             ← Back to Home
           </Link>
+        </div>
         </div>
       </div>
     </div>
