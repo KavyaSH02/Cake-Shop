@@ -12,8 +12,24 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Login attempt:", formData);
-    alert("Login functionality will be implemented with backend!");
+    
+    // Get stored credentials from localStorage
+    const storedCredentials = localStorage.getItem('userCredentials');
+    
+    if (!storedCredentials) {
+      alert("No account found. Please sign up first!");
+      return;
+    }
+    
+    const { email: storedEmail, password: storedPassword } = JSON.parse(storedCredentials);
+    
+    // Validate credentials
+    if (formData.email === storedEmail && formData.password === storedPassword) {
+      console.log("Login successful:", formData);
+      window.location.href = "/dashboard";
+    } else {
+      alert("Invalid email or password!");
+    }
   };
 
   const handleChange = (e) => {

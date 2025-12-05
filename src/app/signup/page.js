@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Signup() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -15,14 +17,29 @@ export default function Signup() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      alert("Please fill in all required fields!");
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
     }
 
-    // Handle signup logic here
+    // Store user credentials in localStorage
+    localStorage.setItem('userCredentials', JSON.stringify({
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName
+    }));
+    
     console.log("Signup attempt:", formData);
-    alert("Account created successfully! Please login.");
+    
+    // Redirect to dashboard
+    router.push("/dashboard");
   };
 
   const handleChange = (e) => {
