@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Box, Typography, TextField, Button, Checkbox, FormControlLabel, Grid } from "@mui/material";
 
 export default function Signup() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,9 +22,18 @@ export default function Signup() {
       return;
     }
 
-    // Handle signup logic here
+    // Store user credentials in localStorage
+    localStorage.setItem('userCredentials', JSON.stringify({
+      email: formData.email,
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName
+    }));
+
     console.log("Signup attempt:", formData);
-    alert("Account created successfully! Please login.");
+
+    // Redirect to dashboard
+    router.push("/dashboard");
   };
 
   const handleChange = (e) => {
