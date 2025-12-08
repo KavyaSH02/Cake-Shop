@@ -26,105 +26,80 @@ export default function Login() {
   return (
     <Box
       sx={{
-        position: "relative",
+        bgcolor: "#fce4ec",
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
-        overflow: "hidden",
-        bgcolor: "#f0f0f0"
+        justifyContent: "center",
+        py: 4
       }}
     >
-      {/* Background Image with blur */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "url('/cc.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(8px)", // Adjust this value to control blur amount
-          zIndex: 0
-        }}
-      />
 
-      {/* Optional dark overlay for contrast */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          bgcolor: "rgba(0,0,0,0.25)", // adjust darkness here
-          zIndex: 1
-        }}
-      />
-
-      {/* Form container */}
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          position: "relative",
-          zIndex: 2,
+          maxWidth: 430,
           width: "100%",
-          maxWidth: 400,
-          px: 4,
-          py: 6,
+          bgcolor: "white",
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 3,
           display: "flex",
           flexDirection: "column",
-          gap: 3,
-          color: "white"
-          // No background or card styling here, fully transparent
+          gap: 1
         }}
       >
-        <Typography variant="h3" fontWeight="bold" color="#f06292" textAlign="center" gutterBottom>
-           Sweet Dreams
-        </Typography>
-        <Typography variant="h5" fontWeight="medium" color="white" textAlign="center" gutterBottom>
-          Welcome Back!
-        </Typography>
-        <Typography variant="body1" textAlign="center" color="white" mb={2}>
-          Sign in to your account
-        </Typography>
+        <Box textAlign="center" mb={2}>
+          <Typography variant="h5" fontWeight="bold" color="#f06292" gutterBottom>
+            🍰 Sweet Dreams
+          </Typography>
+          <Typography variant="h6" fontWeight="semibold" color="#424242" mt={0.5}>
+            Welcome Back!
+          </Typography>
+          <Typography variant="body1" color="#666">
+            Sign in to your account
+          </Typography>
+        </Box>
 
         <TextField
-          variant="filled"
+          variant="outlined"
           name="email"
           label="Email Address"
           type="email"
           value={formData.email}
           onChange={handleChange}
           required
-          InputLabelProps={{ style: { color: "white" } }}
+          fullWidth
           sx={{
-            input: { color: "white" },
-            backgroundColor: "rgba(255,255,255,0.1)",
-            borderRadius: 1,
-            "& .MuiFilledInput-underline:before": { borderBottomColor: "rgba(255,255,255,0.3)" },
-            "& .MuiFilledInput-underline:hover:before": { borderBottomColor: "white" }
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
+
           }}
         />
 
         <TextField
-          variant="filled"
+          variant="outlined"
           name="password"
           label="Password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           required
-          InputLabelProps={{ style: { color: "white" } }}
+          fullWidth
           sx={{
-            input: { color: "white" },
-            backgroundColor: "rgba(255,255,255,0.1)",
-            borderRadius: 1,
-            "& .MuiFilledInput-underline:before": { borderBottomColor: "rgba(255,255,255,0.3)" },
-            "& .MuiFilledInput-underline:hover:before": { borderBottomColor: "white" }
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
           }}
         />
 
         <FormControlLabel
-          control={<Checkbox sx={{ color: "white" }} />}
-          label={<Typography color="white" fontSize={14}>Remember me</Typography>}
+          control={<Checkbox sx={{ color: "#f06292" }} />}
+          label={<Typography fontSize={14}>Remember me</Typography>}
           sx={{ alignSelf: "start" }}
         />
 
@@ -135,21 +110,23 @@ export default function Login() {
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
             color: "white",
-            py: 1.5,
+            py: 1,
             fontWeight: "bold"
           }}
         >
           Sign In
         </Button>
 
-        <Box textAlign="center" color="white" mt={2} fontSize={14}>
-          Don't have an account?{" "}
-          <Link href="/signup" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
-            Sign up here
-          </Link>
+        <Box textAlign="center" mt={1.5}>
+          <Typography variant="body2" color="#666">
+            Don't have an account?{" "}
+            <Link href="/signup" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+              Sign up here
+            </Link>
+          </Typography>
         </Box>
 
-        <Box textAlign="center" color="white" mt={1} fontSize={14}>
+        <Box textAlign="center" mt={0.5}>
           <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
             ← Back to Home
           </Link>
