@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Box, Typography, TextField, Button, Checkbox, FormControlLabel, Grid } from "@mui/material";
 
 export default function Signup() {
   const router = useRouter();
@@ -16,13 +16,7 @@ export default function Signup() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Basic validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      alert("Please fill in all required fields!");
-      return;
-    }
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
@@ -50,147 +44,206 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-pink-50 flex items-center justify-center py-8">
-      <div className="flex items-center gap-8">
-        {/* Avatar beside the card */}
-        <div className="flex-shrink-0">
-          <img 
-            src="/mann.jpg" 
-            alt="Avatar" 
-            className="w-32 h-32 rounded-full object-cover border-4 border-pink-200 shadow-lg"
-          />
-        </div>
-        
-        {/* Signup Card */}
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-pink-600">🍰 Sweet Dreams</h1>
-            <h2 className="text-2xl font-semibold text-gray-800 mt-4">Join Us!</h2>
-            <p className="text-gray-600">Create your account</p>
-          </div>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#fce4ec",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        px: 2,
+        position: "relative"
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            maxWidth: 600,
+            width: "100%",
+            bgcolor: "white",
+            borderRadius: 2,
+            boxShadow: 3,
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2
+          }}
+        >
+          <Box textAlign="center" mb={3}>
+            <Typography variant="h4" fontWeight="bold" color="#f06292" gutterBottom>
+              🍰 Sweet Dreams
+            </Typography>
+            <Typography variant="h5" fontWeight="semibold" color="#424242" mt={2}>
+              Join Us!
+            </Typography>
+            <Typography variant="body1" color="#666">
+              Create your account
+            </Typography>
+          </Box>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name
-              </label>
-              <input
-                type="text"
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField
+                variant="outlined"
                 name="firstName"
+                label="First Name"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                placeholder="First name"
+                fullWidth
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": { borderColor: "#f06292" },
+                    "&.Mui-focused fieldset": { borderColor: "#f06292" }
+                  }
+                }}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              <input
-                type="text"
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                variant="outlined"
                 name="lastName"
+                label="Last Name"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                placeholder="Last name"
+                fullWidth
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": { borderColor: "#f06292" },
+                    "&.Mui-focused fieldset": { borderColor: "#f06292" }
+                  }
+                }}
               />
-            </div>
-          </div>
+            </Grid>
+          </Grid>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Enter your email"
-            />
-          </div>
+          <TextField
+            variant="outlined"
+            name="email"
+            label="Email Address"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Phone number (optional)"
-            />
-          </div>
+          <TextField
+            variant="outlined"
+            name="phone"
+            label="Phone Number (optional)"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange}
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Create password"
-            />
-          </div>
+          <TextField
+            variant="outlined"
+            name="password"
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Confirm password"
-            />
-          </div>
+          <TextField
+            variant="outlined"
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
 
-          <div className="flex items-center">
-            <input type="checkbox" required className="mr-2" />
-            <span className="text-sm text-gray-600">
-              I agree to the Terms of Service and Privacy Policy
-            </span>
-          </div>
+          <FormControlLabel
+            control={<Checkbox required sx={{ color: "#f06292" }} />}
+            label={<Typography fontSize={14}>I agree to the Terms of Service and Privacy Policy</Typography>}
+            sx={{ alignSelf: "start" }}
+          />
 
-          <button
+          <Button
             type="submit"
-            className="w-full bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500"
+            variant="contained"
+            fullWidth
+            sx={{
+              bgcolor: "#f06292",
+              "&:hover": { bgcolor: "#ec407a" },
+              color: "white",
+              py: 1,
+              fontWeight: "bold"
+            }}
           >
             Create Account
-          </button>
-        </form>
+          </Button>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Already have an account?{" "}
-            <Link href="/login" className="text-pink-600 hover:text-pink-800 font-medium">
-              Sign in here
+          <Box textAlign="center" mt={2}>
+            <Typography variant="body2" color="#666">
+              Already have an account?{" "}
+              <Link href="/login" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+                Sign in here
+              </Link>
+            </Typography>
+          </Box>
+
+          <Box textAlign="center" mt={1}>
+            <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
+              ← Back to Home
             </Link>
-          </p>
-        </div>
+          </Box>
+        </Box>
 
-        <div className="mt-4 text-center">
-          <Link href="/" className="text-pink-600 hover:text-pink-800">
-            ← Back to Home
-          </Link>
-        </div>
-        </div>
-      </div>
-    </div>
+        <Box
+          component="img"
+          src="/ccc.jpg"
+          alt="Avatar"
+          sx={{
+            height: 600,
+            width: "auto",
+            objectFit: "contain",
+            position: "absolute",
+            top: 16,
+            right: 16
+          }}
+        />
+      </Box>
+    </Box>
   );
 }
