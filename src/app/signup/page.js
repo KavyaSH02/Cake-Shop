@@ -297,22 +297,7 @@ export default function Signup() {
             </Link>
           </Box>
         </Box>
-
-        <Box
-          component="img"
-          src="/ccc.jpg"
-          alt="Avatar"
-          sx={{
-            height: 600,
-            width: "auto",
-            objectFit: "contain",
-            position: "absolute",
-            top: 16,
-            right: 16
-          }}
-        />
       </Box>
     </Box>
   );
 }
-//
