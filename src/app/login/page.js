@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Box, Typography, TextField, Button, Checkbox, FormControlLabel } from "@mui/material";
 
 export default function Login() {
@@ -12,17 +13,36 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
+    // Validate email field
+    if (!formData.email.trim()) {
+      alert("Email is required!");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert("Please enter a valid email address!");
+      return;
+    }
+
+    // Validate password field
+    if (!formData.password.trim()) {
+      alert("Password is required!");
+      return;
+    }
+
     // Get stored credentials from localStorage
     const storedCredentials = localStorage.getItem('userCredentials');
-    
+
     if (!storedCredentials) {
       alert("No account found. Please sign up first!");
       return;
     }
-    
+
     const { email: storedEmail, password: storedPassword } = JSON.parse(storedCredentials);
-    
+
     // Validate credentials
     if (formData.email === storedEmail && formData.password === storedPassword) {
       console.log("Login successful:", formData);
@@ -42,28 +62,30 @@ export default function Login() {
   return (
     <Box
       sx={{
-        bgcolor: "#fce4ec",
         minHeight: "100vh",
+        bgcolor: "#fce4ec",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        py: 4
+        py: 9,
+        position: "relative"
       }}
     >
-
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          maxWidth: 430,
+          maxWidth: 500,
           width: "100%",
+          height: 500,
           bgcolor: "white",
           borderRadius: 2,
           boxShadow: 3,
-          p: 3,
+          p: 4,
           display: "flex",
           flexDirection: "column",
-          gap: 1
+          gap: 2,
+          justifyContent: "center"
         }}
       >
         <Box textAlign="center" mb={2}>
@@ -81,7 +103,7 @@ export default function Login() {
         <TextField
           variant="outlined"
           name="email"
-          label="Email Address"
+          placeholder="Email Address"
           type="email"
           value={formData.email}
           onChange={handleChange}
@@ -92,14 +114,13 @@ export default function Login() {
               "&:hover fieldset": { borderColor: "#f06292" },
               "&.Mui-focused fieldset": { borderColor: "#f06292" }
             }
-
           }}
         />
 
         <TextField
           variant="outlined"
           name="password"
-          label="Password"
+          placeholder="Password"
           type="password"
           value={formData.password}
           onChange={handleChange}
@@ -115,7 +136,7 @@ export default function Login() {
 
         <FormControlLabel
           control={<Checkbox sx={{ color: "#f06292" }} />}
-          label={<Typography fontSize={14}>Remember me</Typography>}
+          label={<Typography fontSize={14} color="black">Remember me</Typography>}
           sx={{ alignSelf: "start" }}
         />
 
@@ -148,6 +169,22 @@ export default function Login() {
           </Link>
         </Box>
       </Box>
+
+      <Box
+        component="img"
+        src="/ccc.jpg"
+        alt="Avatar"
+        sx={{
+          width: 300,
+          height: 500,
+          objectFit: "cover",
+          position: "absolute",
+          right: 150,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: { xs: "none", lg: "block" }
+        }}
+      />
     </Box>
   );
 }
