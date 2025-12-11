@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Box, Typography, TextField, Button, Checkbox, FormControlLabel } from "@mui/material";
 
 export default function Login() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -46,7 +47,7 @@ export default function Login() {
     // Validate credentials
     if (formData.email === storedEmail && formData.password === storedPassword) {
       console.log("Login successful:", formData);
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
     } else {
       alert("Invalid email or password!");
     }
