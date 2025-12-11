@@ -84,7 +84,7 @@ export default function Signup() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // For name fields, only allow letters and spaces
     if (name === "firstName" || name === "lastName") {
       const nameValue = value.replace(/[^a-zA-Z\s]/g, "");
@@ -122,182 +122,192 @@ export default function Signup() {
         position: "relative"
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          maxWidth: 550,
+          width: "100%",
+          bgcolor: "white",
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2
+        }}
+      >
+        <Box textAlign="center" mb={1}>
+          <Typography variant="h5" fontWeight="bold" color="#f06292" gutterBottom>
+            🍰 Sweet Dreams
+          </Typography>
+          <Typography variant="h6" fontWeight="semibold" color="#424242" mt={0.5}>
+            Join Us!
+          </Typography>
+          <Typography variant="body2" color="#666">
+            Create your account
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <TextField
+            variant="outlined"
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
+          <TextField
+            variant="outlined"
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+            fullWidth
+            size="small"
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": { borderColor: "#f06292" },
+                "&.Mui-focused fieldset": { borderColor: "#f06292" }
+              }
+            }}
+          />
+        </Box>
+
+        <TextField
+          variant="outlined"
+          name="email"
+          placeholder="Email Address"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          fullWidth
+          size="small"
           sx={{
-            maxWidth: 700,
-            width: "100%",
-            bgcolor: "white",
-            borderRadius: 2,
-            boxShadow: 3,
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            gap: 2
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
+          }}
+        />
+
+        <TextField
+          variant="outlined"
+          name="phone"
+          placeholder="Phone Number (optional)"
+          type="tel"
+          value={formData.phone}
+          onChange={handleChange}
+          fullWidth
+          size="small"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
+          }}
+        />
+
+        <TextField
+          variant="outlined"
+          name="password"
+          placeholder="Password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          fullWidth
+          size="small"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
+          }}
+        />
+
+        <TextField
+          variant="outlined"
+          name="confirmPassword"
+          placeholder="Confirm Password"
+          type="password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          required
+          fullWidth
+          size="small"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              "&:hover fieldset": { borderColor: "#f06292" },
+              "&.Mui-focused fieldset": { borderColor: "#f06292" }
+            }
+          }}
+        />
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Checkbox required sx={{ color: "#f06292", padding: 0 }} />
+          <Typography fontSize={14} color="black">
+            I agree to the Terms of Service and Privacy Policy
+          </Typography>
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          sx={{
+            bgcolor: "#f06292",
+            "&:hover": { bgcolor: "#ec407a" },
+            color: "white",
+            py: 1,
+            fontWeight: "bold"
           }}
         >
-          <Box textAlign="center" mb={1}>
-            <Typography variant="h5" fontWeight="bold" color="#f06292" gutterBottom>
-              🍰 Sweet Dreams
-            </Typography>
-            <Typography variant="h6" fontWeight="semibold" color="#424242" mt={0.5}>
-              Join Us!
-            </Typography>
-            <Typography variant="body2" color="#666">
-              Create your account
-            </Typography>
-          </Box>
+          Create Account
+        </Button>
 
-          <Grid container spacing={1}>
-            <Grid item xs={6}>
-              <TextField
-                variant="outlined"
-                name="firstName"
-                placeholder="First Name"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#f06292" },
-                    "&.Mui-focused fieldset": { borderColor: "#f06292" }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                variant="outlined"
-                name="lastName"
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#f06292" },
-                    "&.Mui-focused fieldset": { borderColor: "#f06292" }
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-
-          <TextField
-            variant="outlined"
-            name="email"
-            placeholder="Email Address"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            fullWidth
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
-          />
-
-          <TextField
-            variant="outlined"
-            name="phone"
-            placeholder="Phone Number (optional)"
-            type="tel"
-            value={formData.phone}
-            onChange={handleChange}
-            fullWidth
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
-          />
-
-          <TextField
-            variant="outlined"
-            name="password"
-            placeholder="Password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            fullWidth
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
-          />
-
-          <TextField
-            variant="outlined"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            fullWidth
-            size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
-          />
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Checkbox required sx={{ color: "#f06292", padding: 0 }} />
-            <Typography fontSize={14} color="black">
-              I agree to the Terms of Service and Privacy Policy
-            </Typography>
-          </Box>
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            sx={{
-              bgcolor: "#f06292",
-              "&:hover": { bgcolor: "#ec407a" },
-              color: "white",
-              py: 1,
-              fontWeight: "bold"
-            }}
-          >
-            Create Account
-          </Button>
-
-          <Box textAlign="center" mt={1}>
-            <Typography variant="body2" color="#666">
-              Already have an account?{" "}
-              <Link href="/login" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
-                Sign in here
-              </Link>
-            </Typography>
-          </Box>
-
-          <Box textAlign="center" mt={0.5}>
-            <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
-              ← Back to Home
+        <Box textAlign="center" mt={1}>
+          <Typography variant="body2" color="#666">
+            Already have an account?{" "}
+            <Link href="/login" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+              Sign in here
             </Link>
-          </Box>
+          </Typography>
+        </Box>
+
+        <Box textAlign="center" mt={0.5}>
+          <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
+            ← Back to Home
+          </Link>
         </Box>
       </Box>
+
+      <Box
+        component="img"
+        src="/ccc.jpg"
+        alt="Avatar"
+        sx={{
+          width: 300,
+          height: 500,
+          objectFit: "cover",
+          position: "absolute",
+          right: 150,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: { xs: "none", md: "block" }
+        }}
+      />
     </Box>
   );
 }
