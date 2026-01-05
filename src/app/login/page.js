@@ -3,7 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, Typography, TextField, Button, Checkbox, FormControlLabel } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  InputAdornment,
+  IconButton
+} from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
 export default function Login() {
   const router = useRouter();
@@ -12,45 +23,39 @@ export default function Login() {
     password: ""
   });
 
+  const [showPassword, setShowPassword] = useState(false); // ✅ added
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate email field
     if (!formData.email.trim()) {
       alert("Email is required!");
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       alert("Please enter a valid email address!");
       return;
     }
 
-    // Validate password field
     if (!formData.password.trim()) {
       alert("Password is required!");
       return;
     }
 
-    // Get stored credentials from localStorage
+    // Check credentials from localStorage
     const storedCredentials = localStorage.getItem('userCredentials');
-
-    if (!storedCredentials) {
-      alert("No account found. Please sign up first!");
-      return;
+    if (storedCredentials) {
+      const user = JSON.parse(storedCredentials);
+      if (user.email === formData.email) {
+        alert('Login successful!');
+        router.push("/dashboard");
+        return;
+      }
     }
-
-    const { email: storedEmail, password: storedPassword } = JSON.parse(storedCredentials);
-
-    // Validate credentials
-    if (formData.email === storedEmail && formData.password === storedPassword) {
-      console.log("Login successful:", formData);
-      router.push("/dashboard");
-    } else {
-      alert("Invalid email or password!");
-    }
+    
+    alert('Invalid credentials. Please sign up first.');
   };
 
   const handleChange = (e) => {
@@ -58,6 +63,30 @@ export default function Login() {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // ✅ shared input style (added)
+  const inputStyles = {
+    "& .MuiOutlinedInput-root": {
+      height: 42,
+      display: "flex",
+      alignItems: "center",
+      "&:hover fieldset": { borderColor: "#f06292" },
+      "&.Mui-focused fieldset": { borderColor: "#f06292" }
+    },
+    "& .MuiOutlinedInput-input": {
+      height: "100%",
+      padding: "0 12px",
+      fontSize: "14px",
+      display: "flex",
+      alignItems: "center",
+      boxSizing: "border-box",
+      color: "#000" // ✅ same text color
+    },
+    "& input::placeholder": {
+      fontSize: "14px",
+      opacity: 0.6
+    }
   };
 
   return (
@@ -76,16 +105,16 @@ export default function Login() {
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          maxWidth: 500,
+          maxWidth: 420,
           width: "100%",
-          height: 500,
+          height: "auto",
           bgcolor: "white",
           borderRadius: 2,
           boxShadow: 3,
-          p: 4,
+          p: 2.5,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          gap: 1.5,
           justifyContent: "center"
         }}
       >
@@ -101,6 +130,7 @@ export default function Login() {
           </Typography>
         </Box>
 
+        {/* Email */}
         <TextField
           variant="outlined"
           name="email"
@@ -110,36 +140,52 @@ export default function Login() {
           onChange={handleChange}
           required
           fullWidth
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
+          sx={inputStyles}
         />
 
-        <TextField
-          variant="outlined"
-          name="password"
-          placeholder="Password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          fullWidth
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
-        />
+       
+        {/* Password */}
+<TextField
+  variant="outlined"
+  name="password"
+  placeholder="Password"
+  type={showPassword ? "text" : "password"}
+  value={formData.password}
+  onChange={handleChange}
+  required
+  fullWidth
+  sx={inputStyles}
+  InputProps={{
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+          onClick={() => setShowPassword(!showPassword)}
+          edge="end"
+        >
+          {showPassword ? <VisibilityOff /> : <Visibility />}
+        </IconButton>
+      </InputAdornment>
+    )
+  }}
+/>
 
-        <FormControlLabel
-          control={<Checkbox sx={{ color: "#f06292" }} />}
-          label={<Typography fontSize={14} color="black">Remember me</Typography>}
-          sx={{ alignSelf: "start" }}
-        />
+{/* Forgot Password */}
+<Box textAlign="right" mt={0.3}>
+  <Link
+    href="/forgot-password"
+    style={{
+      fontSize: "13px",
+      color: "#f06292",
+      fontWeight: 500,
+      textDecoration: "none",
+    }}
+  >
+    Forgot password?
+  </Link>
+</Box>
+
+
+       
 
         <Button
           type="submit"
@@ -148,7 +194,7 @@ export default function Login() {
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
             color: "white",
-            py: 1,
+            py: 0.8,
             fontWeight: "bold"
           }}
         >
@@ -158,13 +204,20 @@ export default function Login() {
         <Box textAlign="center" mt={1.5}>
           <Typography variant="body2" color="#666">
             Don't have an account?{" "}
-            <Link href="/signup" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+            <Link
+              href="/signup"
+              style={{
+                color: "#f06292",
+                fontWeight: "bold",
+                textDecoration: "none"
+              }}
+            >
               Sign up here
             </Link>
           </Typography>
         </Box>
 
-        <Box textAlign="center" mt={0.5}>
+        <Box textAlign="center" mt={0.1}>
           <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
             ← Back to Home
           </Link>

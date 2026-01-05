@@ -1,10 +1,17 @@
 "use client";
 import { Box, Avatar, Typography, Button, Divider } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 
 export default function ProfilePage() {
     const router = useRouter();
+    const [cartCount, setCartCount] = useState(0);
+
+    useEffect(() => {
+      const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      setCartCount(cartItems.length);
+    }, []);
 
     return (
       <Box
@@ -70,7 +77,7 @@ export default function ProfilePage() {
         Orders
       </Button>
       <Button fullWidth sx={{ justifyContent: "flex-start", py: 1.5 }}>
-        Wishlist
+        Cart ({cartCount})
       </Button>
       <Button fullWidth sx={{ justifyContent: "flex-start", py: 1.5 }}>
         Address Book
