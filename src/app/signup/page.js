@@ -18,67 +18,20 @@ export default function Signup() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate first name
-    if (!formData.firstName.trim()) {
-      alert("First name is required!");
-      return;
-    }
-    if (!/^[a-zA-Z\s]+$/.test(formData.firstName.trim())) {
-      alert("First name should only contain letters!");
-      return;
-    }
-
-    // Validate last name
-    if (!formData.lastName.trim()) {
-      alert("Last name is required!");
-      return;
-    }
-    if (!/^[a-zA-Z\s]+$/.test(formData.lastName.trim())) {
-      alert("Last name should only contain letters!");
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      alert("Please enter a valid email address!");
-      return;
-    }
-
-    // Validate phone number (10 digits only)
-    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
-      alert("Phone number must be exactly 10 digits!");
-      return;
-    }
-
-    // Validate password length
-    if (formData.password.length < 6) {
-      alert("Password must be at least 6 characters long!");
-      return;
-    }
-
-    // Validate password strength
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      alert("Password must contain at least one uppercase letter, one lowercase letter, and one number!");
-      return;
-    }
-
+    // Basic validation
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
     }
 
-    // Store user credentials in localStorage
+    // Store user info locally
     localStorage.setItem('userCredentials', JSON.stringify({
       email: formData.email,
-      password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName
     }));
-
-    console.log("Signup attempt:", formData);
-
-    // Redirect to dashboard
+    
+    alert('Account created successfully!');
     router.push("/dashboard");
   };
 
