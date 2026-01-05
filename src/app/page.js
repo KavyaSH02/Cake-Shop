@@ -47,7 +47,7 @@ export default function Home() {
             Explore the sweet life
           </Typography>
 
-          <Link href="/signup">
+          <Link href="/login">
             <Button
               variant="contained"
               sx={{

@@ -7,6 +7,7 @@ export default function EditProfilePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     // Load existing user data from localStorage
@@ -16,6 +17,10 @@ export default function EditProfilePage() {
       setName(user.name);
       setEmail(user.email);
     }
+    
+    // Load cart count
+    const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+    setCartCount(cartItems.length);
   }, []);
 
   const handleSave = () => {
@@ -66,6 +71,12 @@ export default function EditProfilePage() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
+      
+      <Box sx={{ mb: 2, p: 2, bgcolor: "#f5f5f5", borderRadius: 1 }}>
+        <Typography variant="body2" color="gray">
+          Cart Items: {cartCount}
+        </Typography>
+      </Box>
 
       <Button
         variant="contained"
