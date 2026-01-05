@@ -1,20 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
   TextField,
   IconButton,
   InputAdornment,
-  Card,
-  CardMedia,
-  CardContent,
-  Button,
   AppBar,
   Toolbar,
   Badge,
   Container,
-  Grid,
   Drawer,
   List,
   ListItem,
@@ -22,46 +19,28 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-
 import SearchIcon from "@mui/icons-material/Search";
 import HomeIcon from "@mui/icons-material/Home";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import { useRouter } from "next/navigation";
 
-
-export default function CakeUI() {
-  const [wishlist, setWishlist] = useState([false]);
-  const [currentImage, setCurrentImage] = useState(0);
+export default function Home() {
   const router = useRouter();
-
-  const images = [
-    "/honey-cake.jpg",
-    "/fruit.png",
-    "/biscuit.JPG",
-    "/choc.jpg",
-    "/cupcake.jpg"
+  
+  const categories = [
+    { name: "Fruit cakes", image: "/fruit.png" },
+    { name: "Biscuits", image: "/biscuit.JPG" },
+    { name: "Chocolate cakes", image: "/chocolate.jpg" },
+    { name: "Cup cakes", image: "/cupcake.jpg" },
+    { name: "Donuts", image: "/donuts.jpeg" },
+    { name: "Birthday cake", image: "/Birthday cake.jpg" },
+    { name: "Bread cake", image: "/Bread Cake.jpg" },
+    { name: "Sweets", image: "/Sweets.jpg" }
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [images.length]);
-
-
-
-  const toggleWishlist = (i) => {
-    const updated = [...wishlist];
-    updated[i] = !updated[i];
-    setWishlist(updated);
-  };
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#fafafa", minHeight: "100vh" }}>
@@ -92,17 +71,17 @@ export default function CakeUI() {
         </Box>
         <List sx={{ px: 2 }}>
           <ListItem sx={{ mb: 1 }}>
-            <ListItemButton sx={{ borderRadius: 2, bgcolor: "#ffe5ec" }}>
+            <ListItemButton sx={{ borderRadius: 2 }} onClick={() => router.push("/dashboard")}>
               <ListItemIcon>
-                <HomeIcon sx={{ color: "#ff3d6c" }} />
+                <HomeIcon />
               </ListItemIcon>
               <ListItemText primary="Home" />
             </ListItemButton>
           </ListItem>
           <ListItem sx={{ mb: 1 }}>
-            <ListItemButton sx={{ borderRadius: 2 }} onClick={() => router.push("/categories")}>
+            <ListItemButton sx={{ borderRadius: 2, bgcolor: "#ffe5ec" }}>
               <ListItemIcon>
-                <CategoryIcon />
+                <CategoryIcon sx={{ color: "#ff3d6c" }} />
               </ListItemIcon>
               <ListItemText primary="Categories" />
             </ListItemButton>
@@ -175,92 +154,53 @@ export default function CakeUI() {
             <IconButton onClick={() => router.push("/profile")}>
               <PersonIcon sx={{ color: "#ff3d6c" }} />
             </IconButton>
-
           </Toolbar>
         </AppBar>
 
         <Container maxWidth="xl" sx={{ py: 4 }}>
-          {/* Hero Section with chocolate background */}
-          <Box
-            sx={{
-              position: "relative",
-              height: "800px",
-              backgroundImage: `url(${images[currentImage]})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              display: "flex",
-              alignItems: "center",
-              borderRadius: "16px",
-              animation: "zoomInOut 3s ease-in-out infinite",
-              "@keyframes zoomInOut": {
-                "0%, 100%": {
-                  transform: "scale(1)",
-                },
-                "50%": {
-                  transform: "scale(1.05)",
-                },
-              },
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                borderRadius: "16px",
-              },
-            }}
-          >
-            <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1 }}>
-              <Box sx={{ maxWidth: 600 }}>
-                <Typography
-                  sx={{
-                    fontSize: { xs: "32px", md: "48px" },
-                    fontWeight: 700,
-                    color: "white",
-                    mb: 2,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  WELCOME TO
-                  <br />
-                  SWEETEST LIFE
-                </Typography>
-                <Box sx={{ display: "flex", gap: 2, mt: 4 }}>
-                  <Button
-                    variant="contained"
-                    sx={{
-                      bgcolor: "white",
-                      color: "black",
-                      borderRadius: "25px",
-                      px: 4,
-                      py: 1.5,
-                      fontWeight: 600,
-                      "&:hover": { bgcolor: "#f5f5f5" },
-                    }}
-                  >
-                    Click to Order
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={() => router.push("/categories")}
-                    sx={{
-                      borderColor: "white",
-                      color: "white",
-                      borderRadius: "25px",
-                      px: 4,
-                      py: 1.5,
-                      fontWeight: 600,
-                      "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" },
-                    }}
-                  >
-                    VIEW MENU
-                  </Button>
-                </Box>
-              </Box>
-            </Container>
-          </Box>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Categories</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {categories.map((category, index) => (
+                <Link key={index} href={`/products?category=${category.name.toLowerCase().replace(" ", "-")}`}>
+                  <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <div className="h-48 relative">
+                      <Image
+                        src={category.image}
+                        alt={category.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-4 text-center">
+                      <h3 className="font-semibold text-pink-500">{category.name}</h3>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Featured Products</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                <h3 className="font-semibold mb-2">Special Cake 1</h3>
+                <p className="text-gray-600 text-sm">Delicious and fresh</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                <h3 className="font-semibold mb-2">Special Cake 2</h3>
+                <p className="text-gray-600 text-sm">Premium quality</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                <h3 className="font-semibold mb-2">Special Cake 3</h3>
+                <p className="text-gray-600 text-sm">Customer favorite</p>
+              </div>
+            </div>
+          </div>
         </Container>
       </Box>
     </Box>
