@@ -2,7 +2,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Box, Typography, TextField, Button, Checkbox, FormControlLabel, Grid } from "@mui/material";
+import toast, { Toaster } from 'react-hot-toast';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Checkbox
+} from "@mui/material";
 
 export default function Signup() {
   const router = useRouter();
@@ -15,51 +22,67 @@ export default function Signup() {
     phone: ""
   });
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
+    // 🔹 Existing validation (UNCHANGED)
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      toast.error("Passwords don't match!");
       return;
     }
 
-    // Store user info locally
-    localStorage.setItem('userCredentials', JSON.stringify({
-      email: formData.email,
-      firstName: formData.firstName,
-      lastName: formData.lastName
-    }));
-    
-    alert('Account created successfully!');
-    router.push("/dashboard");
+    try {
+      setLoading(true);
+
+      // 🔹 API CALL
+      const response = await fetch("http://127.0.0.1:8000/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+  firstName: formData.firstName,
+  lastName: formData.lastName,
+  email: formData.email,
+  phone: formData.phone || "",
+  password: formData.password
+})
+
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.detail || "Signup failed!");
+        return;
+      }
+
+      toast.success("Account created successfully!");
+      router.push("/login");
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // For name fields, only allow letters and spaces
     if (name === "firstName" || name === "lastName") {
       const nameValue = value.replace(/[^a-zA-Z\s]/g, "");
-      setFormData({
-        ...formData,
-        [name]: nameValue
-      });
-    }
-    // For phone field, only allow numbers and limit to 10 digits
-    else if (name === "phone") {
+      setFormData({ ...formData, [name]: nameValue });
+    } else if (name === "phone") {
       const numericValue = value.replace(/\D/g, "");
       if (numericValue.length <= 10) {
-        setFormData({
-          ...formData,
-          [name]: numericValue
-        });
+        setFormData({ ...formData, [name]: numericValue });
       }
     } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
+      setFormData({ ...formData, [name]: value });
     }
   };
 
@@ -90,11 +113,11 @@ export default function Signup() {
           gap: 2
         }}
       >
-        <Box textAlign="center" mb={1}>
-          <Typography variant="h5" fontWeight="bold" color="#f06292" gutterBottom>
+        <Box textAlign="center">
+          <Typography variant="h5" fontWeight="bold" color="#f06292">
             🍰 Sweet Dreams
           </Typography>
-          <Typography variant="h6" fontWeight="semibold" color="#424242" mt={0.5}>
+          <Typography variant="h6" color="#424242">
             Join Us!
           </Typography>
           <Typography variant="body2" color="#666">
@@ -104,7 +127,6 @@ export default function Signup() {
 
         <Box sx={{ display: "flex", gap: 2 }}>
           <TextField
-            variant="outlined"
             name="firstName"
             placeholder="First Name"
             value={formData.firstName}
@@ -112,15 +134,8 @@ export default function Signup() {
             required
             fullWidth
             size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
           />
           <TextField
-            variant="outlined"
             name="lastName"
             placeholder="Last Name"
             value={formData.lastName}
@@ -128,17 +143,10 @@ export default function Signup() {
             required
             fullWidth
             size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": { borderColor: "#f06292" },
-                "&.Mui-focused fieldset": { borderColor: "#f06292" }
-              }
-            }}
           />
         </Box>
 
         <TextField
-          variant="outlined"
           name="email"
           placeholder="Email Address"
           type="email"
@@ -147,33 +155,18 @@ export default function Signup() {
           required
           fullWidth
           size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
         />
 
         <TextField
-          variant="outlined"
           name="phone"
           placeholder="Phone Number (optional)"
-          type="tel"
           value={formData.phone}
           onChange={handleChange}
           fullWidth
           size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
         />
 
         <TextField
-          variant="outlined"
           name="password"
           placeholder="Password"
           type="password"
@@ -182,16 +175,9 @@ export default function Signup() {
           required
           fullWidth
           size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
         />
 
         <TextField
-          variant="outlined"
           name="confirmPassword"
           placeholder="Confirm Password"
           type="password"
@@ -200,17 +186,11 @@ export default function Signup() {
           required
           fullWidth
           size="small"
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              "&:hover fieldset": { borderColor: "#f06292" },
-              "&.Mui-focused fieldset": { borderColor: "#f06292" }
-            }
-          }}
         />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Checkbox required sx={{ color: "#f06292", padding: 0 }} />
-          <Typography fontSize={14} color="black">
+          <Typography fontSize={14}>
             I agree to the Terms of Service and Privacy Policy
           </Typography>
         </Box>
@@ -218,33 +198,33 @@ export default function Signup() {
         <Button
           type="submit"
           variant="contained"
-          fullWidth
+          disabled={loading}
           sx={{
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
-            color: "white",
-            py: 1,
             fontWeight: "bold"
           }}
         >
-          Create Account
+          {loading ? "Creating Account..." : "Create Account"}
         </Button>
 
-        <Box textAlign="center" mt={1}>
-          <Typography variant="body2" color="#666">
+        <Box textAlign="center">
+          <Typography variant="body2">
             Already have an account?{" "}
-            <Link href="/login" style={{ color: "#f06292", fontWeight: "bold", textDecoration: "none" }}>
+            <Link href="/login" style={{ color: "#f06292", fontWeight: "bold" }}>
               Sign in here
             </Link>
           </Typography>
         </Box>
 
-        <Box textAlign="center" mt={0.5}>
-          <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
+        <Box textAlign="center">
+          <Link href="/" style={{ color: "#f06292" }}>
             ← Back to Home
           </Link>
         </Box>
       </Box>
+
+      <Toaster position="top-right" />
 
       <Box
         component="img"
