@@ -8,8 +8,6 @@ import {
   Typography,
   TextField,
   Button,
-  Checkbox,
-  FormControlLabel,
   InputAdornment,
   IconButton
 } from "@mui/material";
@@ -23,11 +21,13 @@ export default function Login() {
     password: ""
   });
 
-  const [showPassword, setShowPassword] = useState(false); // ✅ added
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 🔹 Existing validations (unchanged)
     if (!formData.email.trim()) {
       alert("Email is required!");
       return;
@@ -44,18 +44,47 @@ export default function Login() {
       return;
     }
 
-    // Check credentials from localStorage
-    const storedCredentials = localStorage.getItem('userCredentials');
-    if (storedCredentials) {
-      const user = JSON.parse(storedCredentials);
-      if (user.email === formData.email) {
-        alert('Login successful!');
-        router.push("/dashboard");
+    try {
+      setLoading(true);
+
+      // 🔹 API CALL
+      const response = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Backend error message
+        alert(data.detail || "Login failed!");
         return;
       }
+
+      // 🔹 Store token/user (if provided)
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+      }
+
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      alert("Login successful!");
+      router.push("/dashboard");
+
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    
-    alert('Invalid credentials. Please sign up first.');
   };
 
   const handleChange = (e) => {
@@ -65,7 +94,7 @@ export default function Login() {
     });
   };
 
-  // ✅ shared input style (added)
+  // 🔹 Shared input styles (unchanged)
   const inputStyles = {
     "& .MuiOutlinedInput-root": {
       height: 42,
@@ -81,7 +110,7 @@ export default function Login() {
       display: "flex",
       alignItems: "center",
       boxSizing: "border-box",
-      color: "#000" // ✅ same text color
+      color: "#000"
     },
     "& input::placeholder": {
       fontSize: "14px",
@@ -107,22 +136,20 @@ export default function Login() {
         sx={{
           maxWidth: 420,
           width: "100%",
-          height: "auto",
           bgcolor: "white",
           borderRadius: 2,
           boxShadow: 3,
           p: 2.5,
           display: "flex",
           flexDirection: "column",
-          gap: 1.5,
-          justifyContent: "center"
+          gap: 1.5
         }}
       >
         <Box textAlign="center" mb={2}>
-          <Typography variant="h5" fontWeight="bold" color="#f06292" gutterBottom>
+          <Typography variant="h5" fontWeight="bold" color="#f06292">
             🍰 Sweet Dreams
           </Typography>
-          <Typography variant="h6" fontWeight="semibold" color="#424242" mt={0.5}>
+          <Typography variant="h6" color="#424242">
             Welcome Back!
           </Typography>
           <Typography variant="body1" color="#666">
@@ -132,93 +159,66 @@ export default function Login() {
 
         {/* Email */}
         <TextField
-          variant="outlined"
           name="email"
           placeholder="Email Address"
           type="email"
           value={formData.email}
           onChange={handleChange}
-          required
           fullWidth
           sx={inputStyles}
         />
 
-       
         {/* Password */}
-<TextField
-  variant="outlined"
-  name="password"
-  placeholder="Password"
-  type={showPassword ? "text" : "password"}
-  value={formData.password}
-  onChange={handleChange}
-  required
-  fullWidth
-  sx={inputStyles}
-  InputProps={{
-    endAdornment: (
-      <InputAdornment position="end">
-        <IconButton
-          onClick={() => setShowPassword(!showPassword)}
-          edge="end"
-        >
-          {showPassword ? <VisibilityOff /> : <Visibility />}
-        </IconButton>
-      </InputAdornment>
-    )
-  }}
-/>
+        <TextField
+          name="password"
+          placeholder="Password"
+          type={showPassword ? "text" : "password"}
+          value={formData.password}
+          onChange={handleChange}
+          fullWidth
+          sx={inputStyles}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
+        />
 
-{/* Forgot Password */}
-<Box textAlign="right" mt={0.3}>
-  <Link
-    href="/forgot-password"
-    style={{
-      fontSize: "13px",
-      color: "#f06292",
-      fontWeight: 500,
-      textDecoration: "none",
-    }}
-  >
-    Forgot password?
-  </Link>
-</Box>
-
-
-       
+        {/* Forgot Password */}
+        <Box textAlign="right">
+          <Link href="/forgot-password" style={{ color: "#f06292", fontSize: 13 }}>
+            Forgot password?
+          </Link>
+        </Box>
 
         <Button
           type="submit"
           variant="contained"
+          disabled={loading}
           sx={{
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
-            color: "white",
-            py: 0.8,
             fontWeight: "bold"
           }}
         >
-          Sign In
+          {loading ? "Signing in..." : "Sign In"}
         </Button>
 
-        <Box textAlign="center" mt={1.5}>
-          <Typography variant="body2" color="#666">
+        <Box textAlign="center">
+          <Typography variant="body2">
             Don't have an account?{" "}
-            <Link
-              href="/signup"
-              style={{
-                color: "#f06292",
-                fontWeight: "bold",
-                textDecoration: "none"
-              }}
-            >
+            <Link href="/signup" style={{ color: "#f06292", fontWeight: "bold" }}>
               Sign up here
             </Link>
           </Typography>
         </Box>
 
-        <Box textAlign="center" mt={0.1}>
-          <Link href="/" style={{ color: "#f06292", textDecoration: "none" }}>
+        <Box textAlign="center">
+          <Link href="/" style={{ color: "#f06292" }}>
             ← Back to Home
           </Link>
         </Box>
