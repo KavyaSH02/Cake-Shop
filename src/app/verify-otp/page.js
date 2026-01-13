@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -13,6 +13,14 @@ export default function VerifyOtp() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
+
+  // Get email from localStorage (saved from previous page)
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("forgot_email");
+    if (savedEmail) setEmail(savedEmail);
+  }, []);
 
   const handleChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
@@ -41,7 +49,7 @@ export default function VerifyOtp() {
     inputsRef.current[5].focus();
   };
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     const enteredOtp = otp.join("");
 
@@ -50,12 +58,32 @@ export default function VerifyOtp() {
       return;
     }
 
-    // Accept any 6-digit OTP for demo
-    if (enteredOtp === "123456") {
-      alert("OTP verified successfully!");
+    try {
+      const res = await fetch(
+        "http://127.0.0.1:8000/forgot-password/verify-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email,
+            otp: enteredOtp
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Invalid OTP");
+        return;
+      }
+
+      alert(data.message || "OTP Verified Successfully");
       router.push("/reset-password");
-    } else {
-      alert("Invalid OTP. Use 123456 for demo.");
+
+    } catch (error) {
+      console.error("OTP ERROR:", error);
+      alert("Server error. Try again.");
     }
   };
 
@@ -79,15 +107,10 @@ export default function VerifyOtp() {
           borderRadius: 2,
           boxShadow: 3,
           p: 3,
-          textAlign: "center"
+          textAlign: "center",
         }}
       >
-        <Typography
-          variant="h5"
-          fontWeight="bold"
-          color="#f06292"
-          mb={1}
-        >
+        <Typography variant="h5" fontWeight="bold" color="#f06292" mb={1}>
           OTP Verification
         </Typography>
 
@@ -95,24 +118,14 @@ export default function VerifyOtp() {
           Enter the 6-digit OTP sent to your email
         </Typography>
 
-        {/* OTP Inputs */}
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          mb={3}
-          onPaste={handlePaste}
-        >
+        <Box display="flex" justifyContent="space-between" mb={3} onPaste={handlePaste}>
           {otp.map((digit, index) => (
             <TextField
               key={index}
               inputRef={(el) => (inputsRef.current[index] = el)}
               value={digit}
-              onChange={(e) =>
-                handleChange(e.target.value, index)
-              }
-              onKeyDown={(e) =>
-                handleKeyDown(e, index)
-              }
+              onChange={(e) => handleChange(e.target.value, index)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
               inputProps={{
                 maxLength: 1,
                 style: {
@@ -138,9 +151,7 @@ export default function VerifyOtp() {
           sx={{
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
-            fontWeight: "",
-           fontFamily: "var(--font-geist-sans)",
-           fontStyle: "normal" // 👈 ADD THIS
+            fontFamily: "var(--font-geist-sans)",
           }}
         >
           Verify OTP
