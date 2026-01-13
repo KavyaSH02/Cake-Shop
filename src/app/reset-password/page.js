@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -17,9 +17,17 @@ export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+
   const router = useRouter();
 
-  const handleReset = (e) => {
+  // Fetch saved email from localStorage (from OTP step)
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("forgot_email");
+    if (savedEmail) setEmail(savedEmail);
+  }, []);
+
+  const handleReset = async (e) => {
     e.preventDefault();
 
     if (!password || !confirmPassword) {
@@ -32,21 +40,34 @@ export default function ResetPassword() {
       return;
     }
 
-    // Update password in localStorage
-    const credentials = JSON.parse(
-      localStorage.getItem("userCredentials") || '{}'
-    );
+    try {
+      const res = await fetch("http://127.0.0.1:8000/forgot-password/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        }),
+      });
 
-    localStorage.setItem(
-      "userCredentials",
-      JSON.stringify({
-        ...credentials,
-        password
-      })
-    );
+      const data = await res.json();
 
-    alert("Password updated successfully!");
-    router.push("/login");
+      if (!res.ok) {
+        alert(data.message || "Failed to reset password");
+        return;
+      }
+
+      alert(data.message || "Password reset successfully!");
+
+      // Clear localStorage after success
+      localStorage.removeItem("forgot_email");
+
+      router.push("/login");
+
+    } catch (error) {
+      console.error("RESET ERROR:", error);
+      alert("Server error. Try again.");
+    }
   };
 
   return (
@@ -115,9 +136,7 @@ export default function ResetPassword() {
           sx={{
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
-            fontWeight: "",
-           fontFamily: "var(--font-geist-sans)",
-           fontStyle: "normal" // 👈 ADD THIS
+            fontFamily: "var(--font-geist-sans)",
           }}
         >
           Update Password

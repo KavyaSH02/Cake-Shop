@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Box, Typography, TextField, Button } from "@mui/material";
+import { toast, Toaster } from "react-hot-toast";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -15,79 +16,115 @@ export default function ForgotPassword() {
   });
   const otpRefs = useRef([]);
 
-  const handleEmailSubmit = (e) => {
+  // -----------------------------
+  // STEP 1 → SEND OTP
+  // -----------------------------
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    
-    // Mock email validation
+
     if (!formData.email.trim()) {
-      alert('Please enter your email address');
+      toast.error("Please enter your email address");
       return;
     }
-    
-    alert('OTP sent to your email! Use 123456 as OTP for demo.');
-    setStep(2);
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/forgot-password/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await res.json();
+      console.log('Server response:', data); // Debug log
+
+      if (!res.ok) {
+        const errorMessage = data.detail || data.message || "Failed to send OTP";
+        console.log('Showing error:', errorMessage); // Debug log
+        toast.error(errorMessage);
+        return;
+      }
+
+      // Display the actual server message
+      const successMessage = data.detail || data.message || "OTP has been sent to your email!";
+      console.log('Showing success:', successMessage); // Debug log
+      toast.success(successMessage);
+      setStep(2);
+
+    } catch (error) {
+      toast.error("Server error while sending OTP");
+    }
   };
 
+  // Handle OTP input
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return;
-    
+
     const newOtp = [...formData.otp];
     newOtp[index] = value;
     setFormData({ ...formData, otp: newOtp });
-    
-    // Auto-focus next input
+
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    // Handle backspace
-    if (e.key === 'Backspace' && !formData.otp[index] && index > 0) {
+    if (e.key === "Backspace" && !formData.otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleOtpSubmit = (e) => {
+  // -----------------------------
+  // STEP 2 → VERIFY OTP
+  // -----------------------------
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    
-    const otpString = formData.otp.join('');
+
+    const otpString = formData.otp.join("");
+
     if (otpString.length !== 6) {
-      alert('Please enter complete 6-digit OTP');
+      toast.error("Please enter complete 6-digit OTP");
       return;
     }
-    
-    // Mock OTP verification (accept 123456)
-    if (otpString === '123456') {
-      alert('OTP verified! Set your new password.');
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/forgot-password/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: otpString,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.detail || data.message || "Invalid OTP");
+        return;
+      }
+
+      toast.success(data.detail || data.message || "OTP verified!");
       setStep(3);
-    } else {
-      alert('Invalid OTP. Use 123456 for demo.');
+
+    } catch (error) {
+      toast.error("Server error while verifying OTP");
     }
   };
 
+  // -----------------------------
+  // STEP 3 → RESET PASSWORD
+  // -----------------------------
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
-    
+
     if (formData.newPassword !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      toast.error("Passwords do not match");
       return;
     }
 
-    // Update password in localStorage
-    const storedCredentials = localStorage.getItem('userCredentials');
-    if (storedCredentials) {
-      const user = JSON.parse(storedCredentials);
-      if (user.email === formData.email) {
-        localStorage.setItem('userCredentials', JSON.stringify({
-          ...user,
-          password: formData.newPassword
-        }));
-      }
-    }
-
-    alert('Password reset successfully! You can now login.');
-    router.push('/login');
+    toast.success("Password reset successfully!");
+    router.push("/login");
   };
 
   const handleChange = (e) => {
@@ -127,10 +164,11 @@ export default function ForgotPassword() {
           </Typography>
         </Box>
 
+        {/* STEP 1 - EMAIL */}
         {step === 1 && (
           <Box component="form" onSubmit={handleEmailSubmit}>
             <Typography variant="body2" color="#666" mb={2}>
-              Enter your email address to receive an OTP
+              Enter your email to receive an OTP
             </Typography>
             <TextField
               name="email"
@@ -157,11 +195,13 @@ export default function ForgotPassword() {
           </Box>
         )}
 
+        {/* STEP 2 - OTP */}
         {step === 2 && (
           <Box component="form" onSubmit={handleOtpSubmit}>
             <Typography variant="body2" color="#666" mb={2} textAlign="center">
-              Enter the 6-digit OTP sent to your email
+              Enter the OTP sent to your email
             </Typography>
+
             <Box
               sx={{
                 display: 'flex',
@@ -180,21 +220,22 @@ export default function ForgotPassword() {
                   inputProps={{
                     maxLength: 1,
                     style: {
-                      textAlign: 'center',
-                      fontSize: '18px',
-                      fontWeight: 'bold'
-                    }
+                      textAlign: "center",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                    },
                   }}
                   sx={{
                     width: 50,
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': { borderColor: '#f06292' },
-                      '&.Mui-focused fieldset': { borderColor: '#f06292' }
-                    }
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#f06292" },
+                      "&.Mui-focused fieldset": { borderColor: "#f06292" },
+                    },
                   }}
                 />
               ))}
             </Box>
+
             <Button
               type="submit"
               variant="contained"
@@ -210,11 +251,13 @@ export default function ForgotPassword() {
           </Box>
         )}
 
+        {/* STEP 3 - RESET PASSWORD */}
         {step === 3 && (
           <Box component="form" onSubmit={handlePasswordSubmit}>
             <Typography variant="body2" color="#666" mb={2}>
               Set your new password
             </Typography>
+
             <TextField
               name="newPassword"
               placeholder="New Password"
@@ -225,6 +268,7 @@ export default function ForgotPassword() {
               fullWidth
               sx={{ mb: 2 }}
             />
+
             <TextField
               name="confirmPassword"
               placeholder="Confirm Password"
@@ -235,6 +279,7 @@ export default function ForgotPassword() {
               fullWidth
               sx={{ mb: 3 }}
             />
+
             <Button
               type="submit"
               variant="contained"
@@ -256,6 +301,8 @@ export default function ForgotPassword() {
           </Link>
         </Box>
       </Box>
+
+      <Toaster position="top-right" />
     </Box>
   );
 }

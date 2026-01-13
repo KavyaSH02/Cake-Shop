@@ -59,8 +59,12 @@ export default function Signup() {
         return;
       }
 
-      toast.success("Account created successfully!");
-      router.push("/login");
+     toast.success(data.message || "Account created successfully!");
+
+setTimeout(() => {
+  router.push("/login");
+}, 800);
+
 
     } catch (error) {
       console.error("Signup error:", error);

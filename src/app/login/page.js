@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";   // <-- ADDED
 import {
   Box,
   Typography,
@@ -27,20 +28,20 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🔹 Existing validations (unchanged)
+    // 🔹 Validations
     if (!formData.email.trim()) {
-      alert("Email is required!");
+      toast.error("Email is required!");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      alert("Please enter a valid email address!");
+      toast.error("Please enter a valid email address!");
       return;
     }
 
     if (!formData.password.trim()) {
-      alert("Password is required!");
+      toast.error("Password is required!");
       return;
     }
 
@@ -62,26 +63,21 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Backend error message
-        alert(data.detail || "Login failed!");
-        return;
-      }
+  toast.error(data.detail || data.message || "Login failed!");
+  return;
+}
 
-      // 🔹 Store token/user (if provided)
-      if (data.access_token) {
-        localStorage.setItem("token", data.access_token);
-      }
+toast.success(data.message || "Login successful!");
 
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
 
-      alert("Login successful!");
-      router.push("/dashboard");
+      // 🔹 Delay redirect so toast can appear
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 800);
 
     } catch (error) {
       console.error("Login error:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -94,7 +90,6 @@ export default function Login() {
     });
   };
 
-  // 🔹 Shared input styles (unchanged)
   const inputStyles = {
     "& .MuiOutlinedInput-root": {
       height: 42,
@@ -107,9 +102,6 @@ export default function Login() {
       height: "100%",
       padding: "0 12px",
       fontSize: "14px",
-      display: "flex",
-      alignItems: "center",
-      boxSizing: "border-box",
       color: "#000"
     },
     "& input::placeholder": {
@@ -157,7 +149,6 @@ export default function Login() {
           </Typography>
         </Box>
 
-        {/* Email */}
         <TextField
           name="email"
           placeholder="Email Address"
@@ -168,7 +159,6 @@ export default function Login() {
           sx={inputStyles}
         />
 
-        {/* Password */}
         <TextField
           name="password"
           placeholder="Password"
@@ -188,7 +178,6 @@ export default function Login() {
           }}
         />
 
-        {/* Forgot Password */}
         <Box textAlign="right">
           <Link href="/forgot-password" style={{ color: "#f06292", fontSize: 13 }}>
             Forgot password?
@@ -223,6 +212,8 @@ export default function Login() {
           </Link>
         </Box>
       </Box>
+
+      <Toaster position="top-right" />  {/* <-- Toast Component */}
 
       <Box
         component="img"
