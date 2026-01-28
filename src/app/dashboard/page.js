@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { isAuthenticated } from "../utils/auth";
 import {
   Box,
   Typography,
@@ -39,6 +40,12 @@ export default function CakeUI() {
   const [wishlist, setWishlist] = useState([false]);
   const [currentImage, setCurrentImage] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push('/login');
+    }
+  }, [router]);
 
   const images = [
     "/honey-cake.jpg",
