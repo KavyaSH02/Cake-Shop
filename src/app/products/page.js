@@ -1,43 +1,25 @@
 "use client";
 import Image from "next/image";
-import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment, Snackbar, Alert } from "@mui/material";
+import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useRouter } from "next/navigation";
+
 
 export default function ProductsPage() {
   const [quantities, setQuantities] = useState({});
-  const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [animate, setAnimate] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
-  const [addedItem, setAddedItem] = useState(null);
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
+
   const router = useRouter();
 
-  // Load existing cart from localStorage on component mount and category change
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      const parsedCart = JSON.parse(savedCart);
-      setCart(parsedCart);
-      
-      // Set quantities based on existing cart for current products
-      const savedQuantities = {};
-      parsedCart.forEach(item => {
-        savedQuantities[item.id] = item.quantity;
-      });
-      setQuantities(savedQuantities);
-    } else {
-      setCart([]);
-      setQuantities({});
-    }
-  }, [category]);
 
   const placeholders = [
     "Search products...",
@@ -150,56 +132,17 @@ export default function ProductsPage() {
                     ? sweetsProducts
                     : defaultProducts;
 
-  const handleAdd = (id) => {
-    const product = products.find(p => p.id === id);
-    setQuantities(prev => ({ ...prev, [id]: 1 }));
-    setCart(prev => {
-      const existing = prev.find(item => item.id === id);
-      if (existing) {
-        return prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      const newCart = [...prev, { ...product, quantity: 1 }];
-      localStorage.setItem('cart', JSON.stringify(newCart));
-      return newCart;
-    });
-    setAddedItem(product);
-    setShowPopup(true);
-  };
-
-  const handleIncrement = (id) => {
-    setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-    setCart(prev => {
-      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
-      localStorage.setItem('cart', JSON.stringify(newCart));
-      return newCart;
-    });
-  };
-
+  const handleAdd = (id) => setQuantities(prev => ({ ...prev, [id]: 1 }));
+  const handleIncrement = (id) => setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
   const handleDecrement = (id) => {
     setQuantities(prev => {
       const newQty = (prev[id] || 0) - 1;
       if (newQty <= 0) {
         const { [id]: _, ...rest } = prev;
-        setCart(prev => {
-          const newCart = prev.filter(item => item.id !== id);
-          localStorage.setItem('cart', JSON.stringify(newCart));
-          return newCart;
-        });
         return rest;
       }
-      setCart(prev => {
-        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
-        localStorage.setItem('cart', JSON.stringify(newCart));
-        return newCart;
-      });
       return { ...prev, [id]: newQty };
     });
-  };
-
-
-
-  const handleViewCart = () => {
-    router.push('/cart');
   };
 
   // Filter products based on search query
@@ -207,8 +150,95 @@ export default function ProductsPage() {
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const categoryBackgrounds = {
+    "fruit-cakes": "/fr.jpg",
+    "biscuits": "/Bi.jpg",
+    "chocolate-cakes": "/c.webp",
+    "cup-cakes": "/cr.jpg",
+    "donuts": "/d.jpg",
+    "birthday-cake": "/bl.jpg",
+    "bread-cake": "/old.jpg",
+    "sweets": "/kaju.jpg",
+  };
+
+  const bgImage = categoryBackgrounds[category] || "/fruit.png"; // fallback image
+
+
   return (
-    <Box sx={{ bgcolor: "#f8f8f8", minHeight: "100vh", py: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        py: 5,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        position: "relative",
+        bgcolor: "#f8f8f8",
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35))",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          zIndex: 0,
+        },
+        "& > *": {
+          position: "relative",
+          zIndex: 1,
+        },
+      }}
+    >
+
+      {/* Category Header with Back */}
+      <Box
+        sx={{
+          width: { xs: "95%", sm: 600, md: 900 },
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          mb: 1,
+          color: "#fff",
+        }}
+      >
+        {/* Category Back Pill */}
+        <Box
+          onClick={() => router.push("/categories")}
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 1,
+            px: 2.5,
+            py: 1,
+            borderRadius: "999px",
+            cursor: "pointer",
+            background: "rgba(255,255,255,0.18)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            color: "#fff",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            transition: "all 0.25s ease",
+            "&:hover": {
+              background: "rgba(255,255,255,0.28)",
+              transform: "translateX(-4px)",
+            },
+          }}
+        >
+          <ArrowBackIcon fontSize="small" />
+          <Typography sx={{ fontWeight: 700 }}>
+            {category ? category.replace("-", " ") : "Categories"}
+          </Typography>
+        </Box>
+
+
+      </Box>
+
+
 
       {/* Animated Search Bar */}
       <Box sx={{ position: "relative", width: { xs: "95%", sm: 600, md: 900 }, mb: 1.5 }}>
@@ -289,7 +319,18 @@ export default function ProductsPage() {
 
             <Box sx={{ mt: 1 }}>
               {!quantities[product.id] ? (
-                <Button onClick={() => handleAdd(product.id)} sx={{ bgcolor: "#c62828", color: "#fff", fontWeight: 700, px: 4, py: 0.5, borderRadius: 1, "&:hover": { bgcolor: "#a02020" } }}>
+                <Button
+                  onClick={() => handleAdd(product.id)}
+                  sx={{
+                    bgcolor: "#c62828",
+                    color: "#fff",
+                    fontWeight: 700,
+                    px: 4,
+                    py: 0.5,
+                    borderRadius: 1,
+                    "&:hover": { bgcolor: "#a02020" }
+                  }}
+                >
                   ADD
                 </Button>
               ) : (
@@ -309,48 +350,6 @@ export default function ProductsPage() {
           </Box>
         </Card>
       ))}
-      
-      {/* Popup Notification */}
-      <Snackbar
-  open={showPopup}
-  autoHideDuration={3000}
-  onClose={() => setShowPopup(false)}
-  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
->
-  <Alert
-    onClose={() => setShowPopup(false)}
-    severity="success"
-    sx={{
-      width: "100%",
-      alignItems: "center",
-      bgcolor: "#D32F2F",       // 🔴 RED background
-      color: "#fff",            // ⚪ white text
-      "& .MuiAlert-icon": {
-        color: "#fff",          // ⚪ white success icon
-      },
-    }}
-    action={
-      <Button
-        onClick={handleViewCart}
-        startIcon={
-          <ShoppingCartIcon sx={{ color: "#fff" }} /> // 🛒 white icon
-        }
-        sx={{
-          color: "#fff",
-          fontWeight: "bold",
-          textTransform: "none",
-          "&:hover": {
-            bgcolor: "rgba(255,255,255,0.15)",
-          },
-        }}
-      >
-        VIEW CART
-      </Button>
-    }
-  >
-    {addedItem && `${addedItem.name} added to cart!`}
-  </Alert>
-</Snackbar>
     </Box>
   );
 }
