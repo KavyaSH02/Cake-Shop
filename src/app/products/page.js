@@ -1,19 +1,43 @@
 "use client";
 import Image from "next/image";
-import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment } from "@mui/material";
+import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment, Snackbar, Alert } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function ProductsPage() {
   const [quantities, setQuantities] = useState({});
+  const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [animate, setAnimate] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [addedItem, setAddedItem] = useState(null);
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
+  const router = useRouter();
+
+  // Load existing cart from localStorage on component mount and category change
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const parsedCart = JSON.parse(savedCart);
+      setCart(parsedCart);
+      
+      // Set quantities based on existing cart for current products
+      const savedQuantities = {};
+      parsedCart.forEach(item => {
+        savedQuantities[item.id] = item.quantity;
+      });
+      setQuantities(savedQuantities);
+    } else {
+      setCart([]);
+      setQuantities({});
+    }
+  }, [category]);
 
   const placeholders = [
     "Search products...",
@@ -126,17 +150,56 @@ export default function ProductsPage() {
                     ? sweetsProducts
                     : defaultProducts;
 
-  const handleAdd = (id) => setQuantities(prev => ({ ...prev, [id]: 1 }));
-  const handleIncrement = (id) => setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const handleAdd = (id) => {
+    const product = products.find(p => p.id === id);
+    setQuantities(prev => ({ ...prev, [id]: 1 }));
+    setCart(prev => {
+      const existing = prev.find(item => item.id === id);
+      if (existing) {
+        return prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      const newCart = [...prev, { ...product, quantity: 1 }];
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      return newCart;
+    });
+    setAddedItem(product);
+    setShowPopup(true);
+  };
+
+  const handleIncrement = (id) => {
+    setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    setCart(prev => {
+      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
   const handleDecrement = (id) => {
     setQuantities(prev => {
       const newQty = (prev[id] || 0) - 1;
       if (newQty <= 0) {
         const { [id]: _, ...rest } = prev;
+        setCart(prev => {
+          const newCart = prev.filter(item => item.id !== id);
+          localStorage.setItem('cart', JSON.stringify(newCart));
+          return newCart;
+        });
         return rest;
       }
+      setCart(prev => {
+        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        return newCart;
+      });
       return { ...prev, [id]: newQty };
     });
+  };
+
+
+
+  const handleViewCart = () => {
+    router.push('/cart');
   };
 
   // Filter products based on search query
@@ -246,6 +309,48 @@ export default function ProductsPage() {
           </Box>
         </Card>
       ))}
+      
+      {/* Popup Notification */}
+      <Snackbar
+  open={showPopup}
+  autoHideDuration={3000}
+  onClose={() => setShowPopup(false)}
+  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+>
+  <Alert
+    onClose={() => setShowPopup(false)}
+    severity="success"
+    sx={{
+      width: "100%",
+      alignItems: "center",
+      bgcolor: "#D32F2F",       // 🔴 RED background
+      color: "#fff",            // ⚪ white text
+      "& .MuiAlert-icon": {
+        color: "#fff",          // ⚪ white success icon
+      },
+    }}
+    action={
+      <Button
+        onClick={handleViewCart}
+        startIcon={
+          <ShoppingCartIcon sx={{ color: "#fff" }} /> // 🛒 white icon
+        }
+        sx={{
+          color: "#fff",
+          fontWeight: "bold",
+          textTransform: "none",
+          "&:hover": {
+            bgcolor: "rgba(255,255,255,0.15)",
+          },
+        }}
+      >
+        VIEW CART
+      </Button>
+    }
+  >
+    {addedItem && `${addedItem.name} added to cart!`}
+  </Alert>
+</Snackbar>
     </Box>
   );
 }
