@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 export default function CakeUI() {
   const [wishlist, setWishlist] = useState([false]);
   const [currentImage, setCurrentImage] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -46,6 +47,31 @@ export default function CakeUI() {
       router.push('/login');
     }
   }, [router]);
+
+  // Update cart count from localStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        const cart = JSON.parse(savedCart);
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        setCartCount(totalItems);
+      }
+    };
+    
+    updateCartCount();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', updateCartCount);
+    
+    // Check for cart updates periodically
+    const interval = setInterval(updateCartCount, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   const images = [
     "/honey-cake.jpg",
@@ -169,13 +195,13 @@ export default function CakeUI() {
               }}
             />
             <Box sx={{ flexGrow: 1 }} />
-            <IconButton>
-              <Badge badgeContent={3} color="error">
+            <IconButton onClick={()=> router.push("/cart")}>
+              <Badge badgeContent={cartCount} color="error">
                 <ShoppingCartIcon sx={{ color: "#ff3d6c" }} />
               </Badge>
             </IconButton>
             <IconButton>
-              <Badge badgeContent={5} color="error">
+              <Badge badgeContent={0} color="error">
                 <FavoriteIcon sx={{ color: "#ff3d6c" }} />
               </Badge>
             </IconButton>
