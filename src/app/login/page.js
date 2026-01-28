@@ -49,7 +49,7 @@ export default function Login() {
       setLoading(true);
 
       // 🔹 API CALL
-      const response = await fetch("http://127.0.0.1:8000/login", {
+      const response = await fetch("http://127.0.0.1:5000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -62,15 +62,20 @@ export default function Login() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-  toast.error(data.detail || data.message || "Login failed!");
-  return;
-}
+      if (!response.ok || data.error || (Array.isArray(data) && data[0]?.error)) {
+        const errorMsg = data.error || data[0]?.error || data.detail || data.message || "Invalid credentials!";
+        toast.error(errorMsg);
+        return;
+      }
 
-toast.success(data.message || "Login successful!");
+      // Save user session
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userEmail', formData.email);
+      if (data.token) localStorage.setItem('authToken', data.token);
+      if (data.user) localStorage.setItem('userData', JSON.stringify(data.user));
 
+      toast.success(data.message || "Login successful!");
 
-      // 🔹 Delay redirect so toast can appear
       setTimeout(() => {
         router.push("/dashboard");
       }, 800);
