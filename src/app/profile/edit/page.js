@@ -11,6 +11,7 @@ export default function EditProfilePage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,66 +20,60 @@ export default function EditProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const email = localStorage.getItem("email");
+      const token = localStorage.getItem("authToken");
+      const email = localStorage.getItem("userEmail");
       if (!token || !email) {
+        toast.error("Authentication required");
         router.push("/login");
         return;
       }
 
-      const response = await fetch(
-        `http://127.0.0.1:8000/profile?email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`http://localhost:5000/api/auth/profile?email=${encodeURIComponent(email)}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setFirstName(data.firstName || "");
-        setLastName(data.lastName || "");
-        setEmail(data.email || "");
-        setPhone(data.phone || "");
-      }
+      if (!response.ok) throw new Error('Failed to fetch profile');
+
+      const data = await response.json();
+      setFirstName(data.firstName || "");
+      setLastName(data.lastName || "");
+      setEmail(data.email || email);
+      setPhone(data.phone || "");
+      setAddress(data.address || "");
     } catch (error) {
       console.error("Fetch error:", error);
+      toast.error("Failed to load profile");
     }
   };
 
   const handleSave = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
-      const response = await fetch("http://127.0.0.1:8000/profile/update", {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Authentication required");
+        router.push("/login");
+        return;
+      }
+
+      const response = await fetch("http://localhost:5000/api/auth/profile/update", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          email,
-          firstName,
-          lastName,
-          phone,
-        }),
+        body: JSON.stringify({ email, firstName, lastName, phone, address }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.detail || "Update failed");
-        return;
-      }
+      if (!response.ok) throw new Error('Failed to update profile');
 
       toast.success("Profile updated successfully!");
-      setTimeout(() => router.push("/dashboard"), 800);
+      setTimeout(() => router.push("/profile"), 800);
     } catch (error) {
       console.error("Update error:", error);
-      toast.error("Something went wrong");
+      toast.error("Failed to update profile");
     } finally {
       setLoading(false);
     }
