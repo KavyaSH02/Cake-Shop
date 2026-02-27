@@ -7,53 +7,133 @@ import {
   Card,
   CardContent,
   CardMedia,
-  Button
+  Button,
+  IconButton
 } from "@mui/material";
-import { IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import {
+  Dialog,
+  DialogContent,
+  Chip,
+  Stack
+} from "@mui/material";
+
 
 
 export default function CakesPage() {
+const [open, setOpen] = useState(false);
+const [selectedCake, setSelectedCake] = useState(null);
+const [weight, setWeight] = useState("0.5");
+const [flavor, setFlavor] = useState("Dutch Chocolate");
+const [shape, setShape] = useState("Round");
+const [message, setMessage] = useState("");
+const [tab, setTab] = useState(0);
+
   const router = useRouter();
+  
+  const handleAddToCart = async () => {
+    try {
+      console.log("Adding to cart:", {
+        id: selectedCake.id,
+        name: selectedCake.name,
+        price: selectedCake.price,
+        flavor: flavor,
+        shape: shape,
+        weight: weight,
+        message: message
+      });
+
+      const res = await fetch("http://127.0.0.1:8000/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: selectedCake.id,
+          quantity: 1
+        })
+      });
+      
+      const data = await res.json();
+      console.log("API Response:", data);
+      
+      if (res.ok) {
+        alert("Added to cart successfully!");
+        setOpen(false);
+        router.push("/cart");
+      } else {
+        alert("Failed to add to cart: " + (data.detail || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Failed to add to cart:", error);
+      alert("Error: " + error.message);
+    }
+  };
+
+  const handleCheckout = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: selectedCake.id,
+          quantity: 1
+        })
+      });
+      
+      if (res.ok) {
+        setOpen(false);
+        router.push("/checkout");
+      } else {
+        const data = await res.json();
+        alert("Failed to add to cart: " + (data.detail || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Failed to checkout:", error);
+      alert("Error: " + error.message);
+    }
+  };
+
   const cakes = [
     {
-      id: 1,
+      id: 801,
       name: "Special Designer Mini Choco Ball Round",
       desc: "Special Designer Mini Choco Ball Round Cake",
       price: 775,
       image: "/choo.jpg"
     },
     {
-      id: 2,
+      id: 802,
       name: "Special Designer Choco Vanilla Chips",
       desc: "Exotic Butterscotch Caramello Cake",
       price: 775,
       image: "/weee.jpg"
     },
     {
-      id: 3,
+      id: 803,
       name: "Special Designer Choco Stick Round",
       desc: "Exotic Devils Delight Cake",
       price: 775,
       image: "/he.jpg"
     },
     {
-      id: 4,
+      id: 804,
       name: "Special Designer Dual Layer Heart",
       desc: "Fig & Honey Round Cake",
       price: 775,
       image: "/choco.jpg"
     },
      {
-      id: 5,
+      id: 805,
       name: "Special Designer Dual Layer Heart",
       desc: "Fig & Honey Round Cake",
       price: 775,
       image: "/heee.jpg"
     },
      {
-      id: 6,
+      id: 806,
       name: "Special Designer Dual Layer Heart",
       desc: "Fig & Honey Round Cake",
       price: 775,
@@ -210,17 +290,20 @@ export default function CakesPage() {
         <Grid container spacing={3}>
           {cakes.map((cake) => (
             <Grid item xs={12} sm={6} md={3} key={cake.id}>
-              <Card 
-                sx={{ 
-                  borderRadius: 3,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  transition: "transform 0.2s",
-                  "&:hover": { transform: "translateY(-4px)" },
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column"
-                }}
-              >
+              <Card
+  onClick={() => {
+    setSelectedCake(cake);
+    setWeight("0.5"); // default
+    setOpen(true);
+  }}
+  sx={{
+    cursor: "pointer",
+    borderRadius: 3,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    "&:hover": { transform: "translateY(-4px)" },
+  }}
+>
+
                 <CardMedia
                   component="img"
                   image={cake.image}
@@ -268,14 +351,107 @@ export default function CakesPage() {
           ))}
         </Grid>
       </Box>
+      {/* ===== CAKE DETAILS MODAL ===== */}
+<Dialog
+  open={open}
+  onClose={() => setOpen(false)}
+  maxWidth="md"
+  fullWidth
+>
+  {selectedCake && (
+    <DialogContent sx={{ p: 3, position: "relative" }}>
+      <IconButton onClick={() => setOpen(false)} sx={{ position: "absolute", top: 8, right: 8, color: "#666" }}>
+        <CloseIcon fontSize="small" />
+      </IconButton>
+      <Box display="flex" gap={3}>
+        {/* LEFT - SMALL IMAGE */}
+        <Box sx={{ width: 250, flexShrink: 0 }}>
+          <Box
+            component="img"
+            src={selectedCake.image}
+            alt={selectedCake.name}
+            sx={{ width: "100%", height: 250, objectFit: "cover", borderRadius: 2, mb: 1 }}
+          />
+          {/* Thumbnail Gallery */}
+          <Stack direction="row" spacing={1}>
+            <Box component="img" src={selectedCake.image} sx={{ width: 60, height: 60, objectFit: "cover", borderRadius: 1, border: "2px solid #e91e63", cursor: "pointer" }} />
+            <Box component="img" src={selectedCake.image} sx={{ width: 60, height: 60, objectFit: "cover", borderRadius: 1, cursor: "pointer" }} />
+          </Stack>
+          <Box display="flex" alignItems="center" gap={1} mt={2}>
+            <Box sx={{ width: 12, height: 12, bgcolor: "#4caf50", borderRadius: "50%" }} />
+            <Typography fontSize={13}>Pure Veg</Typography>
+          </Box>
+        </Box>
 
-      {/* ================= BOTTOM DECOR IMAGE ================= */}
-      <Box
-        component="img"
-        src="/bottom-decor.png"
-        alt="Bottom Decor"
-        sx={{ width: "100%", maxHeight: 180, objectFit: "cover" }}
-      />
+        {/* RIGHT - CONTENT */}
+        <Box flex={1}>
+          {/* Flavour */}
+          <Typography fontSize={14} fontWeight={600} mb={1}>Flavour <span style={{color: 'red'}}>*</span></Typography>
+          <Stack direction="row" spacing={1} mb={2} flexWrap="wrap">
+            {["Dutch Chocolate", "Gulliver's Gold", "Swiss chocolate"].map(f => (
+              <Chip key={f} label={f} onClick={() => setFlavor(f)} 
+                sx={{bgcolor: flavor === f ? "#e91e63" : "#f0f0f0", color: flavor === f ? "#fff" : "#000", borderRadius: 8, cursor: "pointer", mb: 1}} />
+            ))}
+          </Stack>
+
+          {/* Shape */}
+          <Typography fontSize={14} fontWeight={600} mb={1}>Shape <span style={{color: 'red'}}>*</span></Typography>
+          <Stack direction="row" spacing={1} mb={2}>
+            <Chip label="Round" onClick={() => setShape("Round")} 
+              sx={{bgcolor: shape === "Round" ? "#e91e63" : "#f0f0f0", color: shape === "Round" ? "#fff" : "#000", borderRadius: 8, cursor: "pointer"}} />
+          </Stack>
+
+          {/* Weight */}
+          <Typography fontSize={14} fontWeight={600} mb={1}>Weight <span style={{color: 'red'}}>*</span></Typography>
+          <Stack direction="row" spacing={1} mb={2}>
+            {["0.5 Kg", "1 Kg", "1.5 Kg", "Others"].map(w => (
+              <Chip key={w} label={w} onClick={() => setWeight(w)} 
+                sx={{bgcolor: weight === w ? "#e91e63" : "#f0f0f0", color: weight === w ? "#fff" : "#000", borderRadius: 8, cursor: "pointer"}} />
+            ))}
+          </Stack>
+
+          {/* Message on Cake */}
+          <Typography fontSize={14} fontWeight={600} mb={1}>Message on Cake</Typography>
+          <Stack direction="row" spacing={1} mb={1} flexWrap="wrap">
+            {["Birthday", "Anniversary", "Congratulations"].map(m => (
+              <Chip key={m} label={m} onClick={() => setMessage(m)} variant="outlined" sx={{borderRadius: 8, cursor: "pointer", mb: 1}} />
+            ))}
+          </Stack>
+          <input type="text" placeholder="Enter your message (max 30 characters)" value={message} onChange={(e) => setMessage(e.target.value.slice(0, 30))}
+            style={{width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", marginBottom: "5px"}} />
+          <Typography fontSize={12} color="text.secondary" mb={2}>{message.length}/30 characters</Typography>
+          
+          <Typography fontSize={11} color="#e91e63" fontStyle="italic" mb={2}>
+            Design and icing of cake may vary from the image shown here since each chef has his/her own way of baking and designing a cake.
+          </Typography>
+
+          {/* Tabs */}
+          <Box sx={{borderBottom: 1, borderColor: "divider", mb: 1}}>
+            <Stack direction="row" spacing={3}>
+              {["Description", "Delivery Details", "Care Instructions"].map((t, i) => (
+                <Typography key={t} onClick={() => setTab(i)} sx={{pb: 1, borderBottom: tab === i ? "2px solid #e91e63" : "none", color: tab === i ? "#e91e63" : "#666", cursor: "pointer", fontSize: 13, fontWeight: tab === i ? 600 : 400}}>{t}</Typography>
+              ))}
+            </Stack>
+          </Box>
+          <Typography fontSize={12} color="text.secondary" mb={2}>
+            {tab === 0 && selectedCake.desc}
+            {tab === 1 && "The delicious cake is hand-delivered by our delivery boy in a good quality cardboard box.\n\nCandle and knife will be delivered as per the availability."}
+            {tab === 2 && "Store cream cakes in a refrigerator. Fondant cakes should be stored in an air conditioned environment."}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* BOTTOM - PRICE & ACTIONS */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mt={2} pt={2} borderTop="1px solid #eee">
+        <Typography fontSize={28} fontWeight={700} color="#e91e63">₹{selectedCake.price}.00</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button onClick={handleAddToCart} variant="outlined" sx={{borderRadius: 8, borderColor: "#e91e63", color: "#e91e63", px: 3}}>Add to Cart</Button>
+          <Button onClick={handleCheckout} variant="contained" sx={{borderRadius: 8, bgcolor: "#e91e63", "&:hover": {bgcolor: "#c2185b"}, px: 3}}>Checkout</Button>
+        </Stack>
+      </Box>
+    </DialogContent>
+  )}
+</Dialog>
     </Box>
   );
 }

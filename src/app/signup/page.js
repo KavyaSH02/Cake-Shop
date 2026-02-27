@@ -8,8 +8,14 @@ import {
   Typography,
   TextField,
   Button,
-  Checkbox
+  Checkbox,
+  InputAdornment,
+  IconButton
 } from "@mui/material";
+
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+
 
 export default function Signup() {
   const router = useRouter();
@@ -23,6 +29,8 @@ export default function Signup() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,6 +97,26 @@ setTimeout(() => {
       setFormData({ ...formData, [name]: value });
     }
   };
+  const inputStyles = {
+    "& .MuiOutlinedInput-root": {
+      height: 42,
+      display: "flex",
+      alignItems: "center",
+      "&:hover fieldset": { borderColor: "#f06292" },
+      "&.Mui-focused fieldset": { borderColor: "#f06292" }
+    },
+    "& .MuiOutlinedInput-input": {
+      height: "100%",
+      padding: "0 12px",
+      fontSize: "14px",
+      color: "#434242"
+    },
+    "& input::placeholder": {
+      fontSize: "14px",
+      opacity: 0.6
+    }
+  };
+
 
   return (
     <Box
@@ -173,23 +201,40 @@ setTimeout(() => {
         <TextField
           name="password"
           placeholder="Password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={formData.password}
           onChange={handleChange}
-          required
           fullWidth
-          size="small"
+          sx={inputStyles}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
 
         <TextField
           name="confirmPassword"
           placeholder="Confirm Password"
-          type="password"
+          type={showConfirmPassword ? "text" : "password"}
           value={formData.confirmPassword}
           onChange={handleChange}
           required
           fullWidth
-          size="small"
+          sx={inputStyles}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -206,7 +251,9 @@ setTimeout(() => {
           sx={{
             bgcolor: "#f06292",
             "&:hover": { bgcolor: "#ec407a" },
-            fontWeight: "bold"
+            fontWeight: "bold",
+            textTransform: "none",
+            fontSize:"15px"
           }}
         >
           {loading ? "Creating Account..." : "Create Account"}
