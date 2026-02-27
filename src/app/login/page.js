@@ -81,18 +81,27 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.detail || data.message || "Login failed!");
+        if (response.status === 401) {
+          toast.error("Invalid email or password!");
+        } else if (response.status === 404) {
+          toast.error("User not found. Please sign up first!");
+        } else {
+          toast.error(data.detail || data.message || "Login failed!");
+        }
+        return;
+      }
+
+      if (!data.access_token) {
+        toast.error("Login failed. Please try again.");
         return;
       }
 
       toast.success(data.message || "Login successful!");
 
-      // 🔥 Save authentication data
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("email", formData.email);
       localStorage.setItem("isLoggedIn", "true");
 
-      // Redirect
       setTimeout(() => {
         router.push("/dashboard");
       }, 800);
