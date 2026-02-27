@@ -1,14 +1,20 @@
 "use client";
 import Image from "next/image";
-import { Box, Typography, Card, IconButton, Button, Grid } from "@mui/material";
+import { Box, Typography, Card, IconButton, Button, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Avatar } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function GalleryContent() {
   const [wishlist, setWishlist] = useState({});
   const [cart, setCart] = useState([]);
+  const [quantities, setQuantities] = useState({});
+  const [showPopup, setShowPopup] = useState(false);
+  const [addedItem, setAddedItem] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -19,7 +25,13 @@ export default function GalleryContent() {
 
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      const parsedCart = JSON.parse(savedCart);
+      setCart(parsedCart);
+      const savedQuantities = {};
+      parsedCart.forEach(item => {
+        savedQuantities[item.id] = item.quantity;
+      });
+      setQuantities(savedQuantities);
     }
   }, []);
 
@@ -37,6 +49,7 @@ export default function GalleryContent() {
   };
 
   const addToCart = (product) => {
+    setQuantities(prev => ({ ...prev, [product.id]: 1 }));
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -44,24 +57,66 @@ export default function GalleryContent() {
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
         localStorage.setItem('cart', JSON.stringify(newCart));
+        window.dispatchEvent(new Event("cartUpdated"));
         return newCart;
       }
       const newCart = [...prev, { ...product, quantity: 1 }];
       localStorage.setItem('cart', JSON.stringify(newCart));
+      window.dispatchEvent(new Event("cartUpdated"));
+      return newCart;
+    });
+    setAddedItem(product);
+    setShowPopup(true);
+  };
+
+  const handleIncrement = (id) => {
+    const newQty = (quantities[id] || 0) + 1;
+    setQuantities(prev => ({ ...prev, [id]: newQty }));
+    setCart(prev => {
+      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      window.dispatchEvent(new Event("cartUpdated"));
       return newCart;
     });
   };
 
+  const handleDecrement = (id) => {
+    setQuantities(prev => {
+      const newQty = (prev[id] || 0) - 1;
+      if (newQty <= 0) {
+        const { [id]: _, ...rest } = prev;
+        setCart(prev => {
+          const newCart = prev.filter(item => item.id !== id);
+          localStorage.setItem('cart', JSON.stringify(newCart));
+          window.dispatchEvent(new Event("cartUpdated"));
+          return newCart;
+        });
+        return rest;
+      }
+      setCart(prev => {
+        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        window.dispatchEvent(new Event("cartUpdated"));
+        return newCart;
+      });
+      return { ...prev, [id]: newQty };
+    });
+  };
+
+  const handleViewCart = () => {
+    router.push('/cart');
+  };
+
   const cakeProducts = [
-    { id: 1, name: "Classic White Graduation Cake", price: 25.00, image: "/thar1.jpg" },
-    { id: 2, name: "Monochrome Graduation Cake", price: 27.00, image: "/doreman.jpg" },
-    { id: 3, name: "Sugar and Spice Twin Cake", price: 40.00, image: "/bullet.jpg" },
-    { id: 4, name: "Artistic Multi-Tiered Cake", price: 45.00, image: "/ballon.jpg" },
-    { id: 5, name: "Mickey Mouse Themed Cake", price: 36.99, image: "/girls.jpg" },
-    { id: 6, name: "Hand-Painted Illustrations", price: 70.00, image: "/panda.jpg" },
-    { id: 7, name: "Draped Floating Wedding Cake", price: 90.00, image: "/hand painted.jpg" },
-    { id: 8, name: "Disney Princess Kids Cake", price: 46.49, image: "/princes.jpg" },
-    { id: 9, name: "Disney Princess Kids Cake", price: 46.49, image: "/car.jpg" }
+    { id: 1, name: "Classic White Graduation Cake", price: 900, image: "/thar1.jpg" },
+    { id: 2, name: "Monochrome Graduation Cake", price: 2000, image: "/doreman.jpg" },
+    { id: 3, name: "Sugar and Spice Twin Cake", price: 3000, image: "/bullet.jpg" },
+    { id: 4, name: "Artistic Multi-Tiered Cake", price: 1500, image: "/ballon.jpg" },
+    { id: 5, name: "Mickey Mouse Themed Cake", price: 1200, image: "/girls.jpg" },
+    { id: 6, name: "Hand-Painted Illustrations", price: 1000, image: "/panda.jpg" },
+    { id: 7, name: "Draped Floating Wedding Cake", price: 1250, image: "/hand painted.jpg" },
+    { id: 8, name: "Disney Princess Kids Cake", price: 1400, image: "/princes.jpg" },
+    { id: 9, name: "Disney Princess Kids Cake", price: 2300, image: "/car.jpg" }
 
   ];
 
@@ -186,31 +241,68 @@ export default function GalleryContent() {
                     mb: 2
                   }}
                 >
-                  ${product.price.toFixed(2)}
+                  ₹{product.price}
                 </Typography>
 
-                <Button
-                  onClick={() => addToCart(product)}
-                  fullWidth
-                  sx={{
-                    bgcolor: "#ffb3ba",
-                    color: "#333",
-                    fontWeight: 600,
-                    py: 1,
-                    borderRadius: 1,
-                    textTransform: "none",
-                    "&:hover": {
-                      bgcolor: "#ff9aa0"
-                    }
-                  }}
-                >
-                  Add To Cart
-                </Button>
+                {!quantities[product.id] ? (
+                  <Button
+                    onClick={() => addToCart(product)}
+                    fullWidth
+                    sx={{
+                      bgcolor: "#ffb3ba",
+                      color: "#333",
+                      fontWeight: 600,
+                      py: 1,
+                      borderRadius: 1,
+                      textTransform: "none",
+                      "&:hover": {
+                        bgcolor: "#ff9aa0"
+                      }
+                    }}
+                  >
+                    Add To Cart
+                  </Button>
+                ) : (
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, bgcolor: "#ffb3ba", borderRadius: 1, py: 0.5 }}>
+                    <IconButton size="small" onClick={() => handleDecrement(product.id)} sx={{ color: "#333" }}>
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <Typography sx={{ color: "#333", fontWeight: 700, minWidth: 24, textAlign: "center" }}>
+                      {quantities[product.id]}
+                    </Typography>
+                    <IconButton size="small" onClick={() => handleIncrement(product.id)} sx={{ color: "#333" }}>
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                )}
               </Box>
             </Card>
           </Grid>
         ))}
       </Grid>
+
+      <Dialog
+        open={showPopup}
+        onClose={() => setShowPopup(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2, p: 1 } }}
+      >
+        <DialogTitle sx={{ textAlign: "center", fontWeight: 700 }}>Added to Cart</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+          {addedItem && (
+            <>
+              <Avatar src={addedItem.image} alt={addedItem.name} variant="rounded" sx={{ width: 80, height: 80 }} />
+              <Typography sx={{ fontWeight: 700 }}>{addedItem.name}</Typography>
+              <Typography color="text.secondary">${addedItem.price.toFixed(2)}</Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", gap: 1, pb: 2 }}>
+          <Button onClick={() => setShowPopup(false)} sx={{ textTransform: "none" }}>Continue</Button>
+          <Button onClick={handleViewCart} startIcon={<ShoppingCartIcon />} sx={{ bgcolor: "#ffb3ba", color: "#333", textTransform: "none", '&:hover': { bgcolor: '#ff9aa0' } }}>View Cart</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
