@@ -11,8 +11,8 @@ import {
 } from "@mui/material";
 import { Danger } from "iconsax-react";
 
-export default function LowStockCard({ items = [] }) {
-    const displayItems = items.length > 0 ? items : [
+export default function LowStockCard() {
+    const displayItems = [
         { name: "No low stock items", stock: 0 }
     ];
 

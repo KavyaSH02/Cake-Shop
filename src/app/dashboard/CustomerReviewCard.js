@@ -3,11 +3,9 @@
 import { Paper, Box, Typography, List, ListItem, ListItemText, Rating } from "@mui/material";
 import { Star1 } from "iconsax-react";
 
-export default function CustomerReviewCard({ reviews = [] }) {
-    const displayReviews = reviews.length > 0 ? reviews : [];
-    const avgRating = displayReviews.length > 0 
-        ? (displayReviews.reduce((sum, r) => sum + r.rating, 0) / displayReviews.length).toFixed(1)
-        : "0.0";
+export default function CustomerReviewCard() {
+    const displayReviews = [];
+    const avgRating = "0.0";
 
     return (
         <Paper sx={{ p: 2, borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", height: 345, display: "flex", flexDirection: "column" }}>

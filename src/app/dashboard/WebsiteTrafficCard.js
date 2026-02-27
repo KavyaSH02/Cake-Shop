@@ -3,15 +3,15 @@
 import { Paper, Box, Typography, Divider } from "@mui/material";
 import { Global, Eye, ArrowUp } from "iconsax-react";
 
-export default function WebsiteTrafficCard({ data = {} }) {
-    const hasData = data && Object.keys(data).length > 0;
-    
+export default function WebsiteTrafficCard() {
     const stats = {
-        totalViews: data?.totalViews || 0,
-        todayViews: data?.todayViews || 0,
-        uniqueVisitors: data?.uniqueVisitors || 0,
-        growthPercent: data?.growthPercent || 0
+        totalViews: 0,
+        todayViews: 0,
+        uniqueVisitors: 0,
+        growthPercent: 0
     };
+
+    const hasData = false;
 
     return (
         <Paper sx={{ p: 2, borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", height: 345, display: "flex", flexDirection: "column" }}>
