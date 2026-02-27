@@ -23,6 +23,7 @@ import PersonIcon from "@mui/icons-material/Person";
 
 export default function CheckoutPage() {
   const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     phone: ""
@@ -39,13 +40,63 @@ export default function CheckoutPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    } else {
-      router.push('/cart');
-    }
+    fetchCartFromBackend();
+    loadSavedAddress();
   }, [router]);
+
+  const fetchCartFromBackend = async () => {
+    try {
+      setLoading(true);
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) {
+        router.push('/cart');
+        return;
+      }
+      const res = await fetch(`http://127.0.0.1:8000/cart?email=${encodeURIComponent(userEmail)}`);
+      const data = await res.json();
+
+      const normalizedCart = (data.items || []).map(ci => ({
+        id: ci.id,
+        product_id: ci.id,
+        name: ci.name,
+        price: ci.price,
+        originalPrice: ci.originalPrice,
+        image: ci.image,
+        description: ci.description,
+        quantity: ci.quantity
+      }));
+
+      setCart(normalizedCart);
+      if (normalizedCart.length === 0) {
+        router.push('/cart');
+      }
+    } catch (error) {
+      console.error("Failed to fetch cart:", error);
+      router.push('/cart');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSavedAddress = () => {
+    const email = localStorage.getItem('email');
+    if (email) {
+      const savedAddress = localStorage.getItem(`address_${email}`);
+      if (savedAddress) {
+        const addressData = JSON.parse(savedAddress);
+        setCustomerInfo({
+          name: addressData.name || '',
+          phone: addressData.phone || ''
+        });
+        setDeliveryInfo({
+          address: addressData.address || '',
+          city: addressData.city || '',
+          pincode: addressData.pincode || '',
+          deliveryTime: 'standard'
+        });
+      }
+    }
+  };
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -73,31 +124,57 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
 
-    // Simulate order processing
-    setTimeout(() => {
-      const orderData = {
-        id: Date.now(),
-        items: cart,
-        customer: customerInfo,
-        delivery: deliveryInfo,
-        payment: paymentMethod,
-        total: getTotalPrice(),
-        status: "confirmed",
-        orderDate: new Date().toISOString()
-      };
+    try {
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) {
+        alert("Please login first");
+        return;
+      }
+      const res = await fetch(`http://127.0.0.1:8000/orders?email=${encodeURIComponent(userEmail)}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          customer: customerInfo,
+          delivery: deliveryInfo,
+          payment_method: paymentMethod,
+          items: cart,
+          total: getTotalPrice() + (deliveryInfo.deliveryTime === "express" ? 50 : 0)
+        })
+      });
 
-      // Save order to localStorage
-      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-      orders.push(orderData);
-      localStorage.setItem('orders', JSON.stringify(orders));
+      const data = await res.json();
+      console.log("Order response:", data);
 
-      // Clear cart
-      localStorage.removeItem('cart');
+      if (!res.ok) throw new Error(data.detail || "Order failed");
 
-      // Redirect to success page
-      router.push(`/order-success?orderId=${orderData.id}`);
-    }, 2000);
+      // ✅ Redirect after backend success
+      const orderId = data.data?.order_id || data.order_id || data.id;
+      console.log("Redirecting with order ID:", orderId);
+      router.push(`/order-success?orderId=${orderId}`);
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to place order");
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "#f8f8f8"
+      }}>
+        <Typography variant="h6">Loading checkout...</Typography>
+      </Box>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -169,7 +246,10 @@ export default function CheckoutPage() {
                 <TextField
                   label="Full Name"
                   value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                  onChange={(e) => {
+                    setCustomerInfo({ ...customerInfo, name: e.target.value });
+                    if (errors.name) setErrors({ ...errors, name: "" });
+                  }}
                   error={!!errors.name}
                   helperText={errors.name}
                   fullWidth
@@ -177,7 +257,10 @@ export default function CheckoutPage() {
                 <TextField
                   label="Phone Number"
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                  onChange={(e) => {
+                    setCustomerInfo({ ...customerInfo, phone: e.target.value });
+                    if (errors.phone) setErrors({ ...errors, phone: "" });
+                  }}
                   error={!!errors.phone}
                   helperText={errors.phone}
                   fullWidth
@@ -187,7 +270,10 @@ export default function CheckoutPage() {
                   multiline
                   rows={2}
                   value={deliveryInfo.address}
-                  onChange={(e) => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
+                  onChange={(e) => {
+                    setDeliveryInfo({ ...deliveryInfo, address: e.target.value });
+                    if (errors.address) setErrors({ ...errors, address: "" });
+                  }}
                   error={!!errors.address}
                   helperText={errors.address}
                   fullWidth
@@ -196,7 +282,10 @@ export default function CheckoutPage() {
                   <TextField
                     label="City"
                     value={deliveryInfo.city}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, city: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryInfo({ ...deliveryInfo, city: e.target.value });
+                      if (errors.city) setErrors({ ...errors, city: "" });
+                    }}
                     error={!!errors.city}
                     helperText={errors.city}
                     fullWidth
@@ -204,7 +293,10 @@ export default function CheckoutPage() {
                   <TextField
                     label="Pincode"
                     value={deliveryInfo.pincode}
-                    onChange={(e) => setDeliveryInfo({ ...deliveryInfo, pincode: e.target.value })}
+                    onChange={(e) => {
+                      setDeliveryInfo({ ...deliveryInfo, pincode: e.target.value });
+                      if (errors.pincode) setErrors({ ...errors, pincode: "" });
+                    }}
                     error={!!errors.pincode}
                     helperText={errors.pincode}
                     fullWidth

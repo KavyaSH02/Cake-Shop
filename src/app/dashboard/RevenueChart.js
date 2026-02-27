@@ -4,20 +4,18 @@ import { useState, useMemo } from "react";
 import { Box, Typography, Paper } from "@mui/material";
 import { MoneyRecive } from "iconsax-react";
 
-export default function RevenueChart({ data }) {
+export default function RevenueChart() {
     const [hoverPos, setHoverPos] = useState(null);
 
-    // Example data (can come from API)
-    const chartData =
-        data || [
-            { label: "Mon", current: 2500, previous: 1800 },
-            { label: "Tue", current: 3200, previous: 2600 },
-            { label: "Wed", current: 2800, previous: 3000 },
-            { label: "Thu", current: 4100, previous: 3500 },
-            { label: "Fri", current: 3800, previous: 3400 },
-            { label: "Sat", current: 5200, previous: 4200 },
-            { label: "Sun", current: 4500, previous: 3900 }
-        ];
+    const chartData = [
+        { label: "Mon", current: 2500, previous: 1800 },
+        { label: "Tue", current: 3200, previous: 2600 },
+        { label: "Wed", current: 2800, previous: 3000 },
+        { label: "Thu", current: 4100, previous: 3500 },
+        { label: "Fri", current: 3800, previous: 3400 },
+        { label: "Sat", current: 5200, previous: 4200 },
+        { label: "Sun", current: 4500, previous: 3900 }
+    ];
 
     const maxRevenue = Math.max(
         ...chartData.flatMap((d) => [d.current, d.previous])

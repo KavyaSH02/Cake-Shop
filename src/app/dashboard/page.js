@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Box, Typography, CircularProgress, Grid } from "@mui/material";
-import { Bag2, TrendUp, Eye } from "iconsax-react";
+import { Box, Typography, Grid } from "@mui/material";
+import { Bag2, TrendUp } from "iconsax-react";
 import DashboardStatCard from "./DashboardStatCard";
 import RevenueChart from "./RevenueChart";
 import LowStockCard from "./LowStockCard";
@@ -10,72 +9,26 @@ import CustomerReviewCard from "./CustomerReviewCard";
 import WebsiteTrafficCard from "./WebsiteTrafficCard";
 
 export default function DashboardPage() {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        // Fetch data from backend API
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/stats`)
-            .then((res) => {
-                if (!res.ok) throw new Error("Failed to fetch dashboard stats");
-                return res.json();
-            })
-            .then((data) => {
-                setStats(data);
-                setLoading(false);
-            })
-            .catch((err) => {
-                console.error(err);
-                setError("Failed to load data");
-                setLoading(false);
-            });
-    }, []);
-
-    if (loading) {
-        return (
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    minHeight: "80vh",
-                }}
-            >
-                <CircularProgress sx={{ color: "#ff3d6c" }} />
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <Typography color="error">{error}</Typography>
-            </Box>
-        );
-    }
-
     const cards = [
         {
             title: "Orders Today",
-            value: stats?.ordersToday || 0,
+            value: 12,
             icon: <Bag2 size={28} color="#ff3d6c" variant="Bold" />,
             color: "#ff3d6c",
         },
         {
             title: "Orders This Month",
-            value: stats?.ordersThisMonth || 0,
+            value: 145,
             icon: <Bag2 size={28} color="#ff6b9d" variant="Bold" />,
             color: "#ff6b9d",
         },
         {
             title: "Most Ordered",
-            value: stats?.mostOrdered?.name || "N/A",
-            subtitle: `${stats?.mostOrdered?.count || 0} orders`,
+            value: "Black Forest Cake",
+            subtitle: "34 orders",
             icon: <TrendUp size={28} color="#9c27b0" variant="Bold" />,
             color: "#9c27b0",
         },
-
     ];
 
     return (
@@ -101,18 +54,20 @@ export default function DashboardPage() {
 
             <Grid container spacing={3} mt={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <RevenueChart data={stats?.revenueData} />
+                    <RevenueChart />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <LowStockCard items={stats?.lowStockItems} />
+                    <LowStockCard />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <CustomerReviewCard reviews={stats?.customerReviews} />
+                    <CustomerReviewCard />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <WebsiteTrafficCard data={stats?.websiteTraffic} />
+                    <WebsiteTrafficCard />
                 </Grid>
             </Grid>
+
+
 
         </Box>
     );
