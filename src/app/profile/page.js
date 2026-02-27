@@ -25,60 +25,117 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import FeedbackIcon from "@mui/icons-material/Feedback";
+import { useSession, signOut } from "next-auth/react";
+
 
 
 
 export default function ProfilePage({ isDrawer = false, onClose }) {
   const router = useRouter();
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
-    setCartCount(cartItems.length);
+    if (status !== "loading") {
+       fetchProfile();
+    }
+    
+    const fetchCartCount = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/cart");
+        const data = await res.json();
+        const totalItems = (data.items || []).reduce((total, item) => total + item.quantity, 0);
+        setCartCount(totalItems);
+      } catch (error) {
+        console.error("Failed to fetch cart count:", error);
+        setCartCount(0);
+      }
+    };
+
+    const fetchWishlistCount = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/wishlist");
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        setWishlistCount(items.length);
+      } catch (error) {
+        console.error("Failed to fetch wishlist count:", error);
+        setWishlistCount(0);
+      }
+    };
+    
+    fetchCartCount();
+    fetchWishlistCount();
     fetchProfile();
-  }, []);
+    
+    // Check for updates periodically
+    const interval = setInterval(() => {
+      fetchCartCount();
+      fetchWishlistCount();
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [status, session]);
 
   const fetchProfile = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const email = localStorage.getItem("email");
-
-      if (!token || !email) {
-        router.push("/login");
-        return;
-      }
-
-      const response = await fetch(
-        `http://127.0.0.1:8000/profile?email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (!response.ok) {
-        toast.error("Failed to fetch profile");
-        router.push("/login");
-        return;
-      }
-
-      const data = await response.json();
-      setUserData(data);
-    } catch (error) {
-      toast.error("Something went wrong");
-    } finally {
+  try {
+    // 🔹 Google login (NextAuth)
+    if (session?.user) {
+      setUserData({
+        firstName: session.user.name,
+        email: session.user.email,
+      });
       setLoading(false);
+      return;
     }
-  };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    toast.success("Logged out successfully");
-    setTimeout(() => router.push("/login"), 600);
-  };
+    // 🔹 Normal login (FastAPI)
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("email");
+
+    if (!token || !email) {
+      router.push("/login");
+      return;
+    }
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/profile?email=${encodeURIComponent(email)}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) {
+      router.push("/login");
+      return;
+    }
+
+    const data = await response.json();
+    setUserData(data);
+  } catch (error) {
+    toast.error("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const handleLogout = async () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("email");
+
+  if (session) {
+    await signOut({ redirect: false });
+  }
+
+  toast.success("Logged out successfully");
+  setTimeout(() => router.push("/login"), 600);
+};
+
 
   if (loading) {
     return (
@@ -185,11 +242,11 @@ export default function ProfilePage({ isDrawer = false, onClose }) {
 
           {/* Menu Items */}
           <MenuItem icon={<HomeIcon />}  onClick={() => router.push("/dashboard")} title="Home" />
-          <MenuItem icon={<ShoppingCartIcon />} title={`My Cart (${cartCount})`} />
-          <MenuItem icon={<ReceiptLongIcon />} title="Order History" />
+          <MenuItem icon={<ShoppingCartIcon />} onClick={() => router.push("/cart")} title="My Cart" count={cartCount} />
+          <MenuItem icon={<ReceiptLongIcon />} onClick={() => router.push("/order-history")} title="Order History" />
           <MenuItem icon={<LocalOfferIcon />} title="Enter Promo Code" />
           <MenuItem icon={<AccountBalanceWalletIcon />} title="Wallet" />
-          <MenuItem icon={<FavoriteIcon />} title="Favorites" />
+          <MenuItem icon={<FavoriteIcon />} onClick={() => router.push("/wishlist")} title="Favorites" count={wishlistCount} />
           <MenuItem icon={<LiveHelpIcon />} onClick={() => router.push("/faqs")} title="FAQs" />
           <MenuItem icon={<FeedbackIcon />} onClick={() => router.push("/feedback")} title="Feedback" />
           {/* <MenuItem icon={<SettingsIcon />} title="Setting" />  */}
@@ -210,7 +267,9 @@ export default function ProfilePage({ isDrawer = false, onClose }) {
 }
 
 /* Menu Component */
-function MenuItem({ icon, title, onClick, color }) {
+function MenuItem({ icon, title, onClick, color, count }) {
+  const displayTitle = count > 0 ? `${title} (${count})` : title;
+  
   return (
     <Button
       fullWidth
@@ -228,7 +287,7 @@ function MenuItem({ icon, title, onClick, color }) {
       }}
     >
       {icon}
-      {title}
+      {displayTitle}
     </Button>
   );
 }
