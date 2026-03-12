@@ -1,25 +1,74 @@
 "use client";
 import Image from "next/image";
-import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment } from "@mui/material";
+import { Box, Typography, Card, Chip, IconButton, Rating, Button, TextField, InputAdornment, Snackbar, Alert } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import toast, { Toaster } from "react-hot-toast";
 
 
 export default function ProductsPage() {
   const [quantities, setQuantities] = useState({});
+  const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [animate, setAnimate] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [addedItem, setAddedItem] = useState(null);
   const searchParams = useSearchParams();
-  const category = searchParams.get('category');
+  const [wishlist, setWishlist] = useState({});
+  const [apiProducts, setApiProducts] = useState([]);
 
+  const category = searchParams.get('category');
   const router = useRouter();
 
+  // Fetch products from backend API
+  const fetchProductsFromAPI = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/products?category=${category}`);
+      const data = await response.json();
+      setApiProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setApiProducts([]);
+    }
+  };
+
+  useEffect(() => {
+    if (category) {
+      fetchProductsFromAPI();
+    }
+  }, [category]);
+
+  // Load existing cart from localStorage on component mount and category change
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const parsedCart = JSON.parse(savedCart);
+      setCart(parsedCart);
+      
+      // Set quantities based on existing cart for current products
+      const savedQuantities = {};
+      parsedCart.forEach(item => {
+        savedQuantities[item.id] = item.quantity;
+      });
+      setQuantities(savedQuantities);
+    } else {
+      setCart([]);
+      setQuantities({});
+    }
+
+    // Load wishlist from localStorage
+    const savedWishlist = localStorage.getItem('wishlist');
+    if (savedWishlist) {
+      setWishlist(JSON.parse(savedWishlist));
+    }
+  }, [category]);
 
   const placeholders = [
     "Search products...",
@@ -28,6 +77,70 @@ export default function ProductsPage() {
     "Search cupcakes...",
     "Search donuts...",
   ];
+  const toggleWishlist = async (id) => {
+    const product = products.find(p => p.id === id);
+    const isInWishlist = wishlist[id];
+    const userEmail = localStorage.getItem('email');
+    if (!userEmail) return;
+
+    try {
+  if (isInWishlist) {
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/wishlist/remove/${id}?email=${encodeURIComponent(userEmail)}`,
+      { method: "DELETE" }
+    );
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setWishlist(prev => {
+        const newWishlist = { ...prev };
+        delete newWishlist[id];
+        return newWishlist;
+      });
+
+      // toast.success(data.message || "Removed ");
+      toast.success(data.message || "Removed ", { icon: "❌" });
+    } else {
+      toast.error(data.message || "Failed to remove item");
+    }
+
+  } else {
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/wishlist/add?email=${encodeURIComponent(userEmail)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
+          originalPrice: product.originalPrice,
+          image: product.image,
+          description: product.description
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setWishlist(prev => ({ ...prev, [id]: true }));
+
+      toast.success(data.message || "Added ");
+    } else {
+      toast.error(data.message || "Failed to add item");
+    }
+  }
+
+} catch (error) {
+  console.error("Wishlist operation failed:", error);
+  toast.error("Server error");
+}
+  };
+
 
   // Animate placeholder every 2 seconds
   useEffect(() => {
@@ -75,45 +188,46 @@ export default function ProductsPage() {
   ];
 
   const donutProducts = [
-    { id: 301, name: "Vanilla Cupcake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/d.jpg", description: "Classic vanilla cupcake with frosting", badge: "Bestseller" },
-    { id: 302, name: "Chocolate Cupcake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/do.jpg", description: "Rich chocolate cupcake delight", badge: "Highly reordered" },
-    { id: 303, name: "Strawberry Cupcake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/don.jpg", description: "Fresh strawberry flavored cupcake", badge: "Chef's Special" },
-    { id: 304, name: "Red Velvet Cupcake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/donu.jpg", description: "Classic red velvet with cream cheese", badge: "Chef's Special" },
-    { id: 305, name: "Funfetti Cupcake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/dd.jpg", description: "Colorful sprinkle cupcake", badge: "Highly reordered" },
+    { id: 401, name: "Strawberry Donut", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/d.jpg", description: "Glazed donut with fresh strawberry topping", badge: "Bestseller" },
+    { id: 402, name: "Chocolate donut", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/do.jpg", description: "Rich chocolate glazed donut", badge: "Highly reordered" },
+    { id: 403, name: "Dark Donut", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/don.jpg", description: "Dark chocolate donut with cocoa glaze", badge: "Chef's Special" },
+    { id: 404, name: "Mixed Donut", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/donu.jpg", description: "Assorted toppings on classic donut", badge: "Chef's Special" },
+    { id: 405, name: "Walnut donut", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/dd.jpg", description: "Crunchy walnut topped donut", badge: "Highly reordered" },
   ]
 
   const birthdayCakeProducts = [
-    { id: 301, name: "Vanilla Cupcake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/bl.jpg", description: "Classic vanilla cupcake with frosting", badge: "Bestseller" },
-    { id: 302, name: "Chocolate Cupcake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/blk.jpg", description: "Rich chocolate cupcake delight", badge: "Highly reordered" },
-    { id: 303, name: "Strawberry Cupcake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/fst.jpg", description: "Fresh strawberry flavored cupcake", badge: "Chef's Special" },
-    { id: 304, name: "Red Velvet Cupcake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/forset.jpg", description: "Classic red velvet with cream cheese", badge: "Chef's Special" },
-    { id: 305, name: "Funfetti Cupcake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/bck.jpg", description: "Colorful sprinkle cupcake", badge: "Highly reordered" },
+    { id: 501, name: "Black Forest Birthday Cake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/bl.jpg", description: "Classic black forest with cherries", badge: "Bestseller" },
+    { id: 502, name: "Chocolate Birthday Cake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/blk.jpg", description: "Rich chocolate celebration cake", badge: "Highly reordered" },
+    { id: 503, name: "Strawberry Birthday Cake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/fst.jpg", description: "Fresh strawberry birthday delight", badge: "Chef's Special" },
+    { id: 504, name: "Red Velvet Birthday Cake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/forset.jpg", description: "Elegant red velvet celebration cake", badge: "Chef's Special" },
+    { id: 505, name: "Rainbow Birthday Cake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/bck.jpg", description: "Colorful rainbow layered cake", badge: "Highly reordered" },
   ]
 
   const breadCakeProducts = [
-    { id: 301, name: "Vanilla Cupcake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/old.jpg", description: "Classic vanilla cupcake with frosting", badge: "Bestseller" },
-    { id: 302, name: "Chocolate Cupcake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/ol.jpg", description: "Rich chocolate cupcake delight", badge: "Highly reordered" },
-    { id: 303, name: "Strawberry Cupcake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/brrr.jpg", description: "Fresh strawberry flavored cupcake", badge: "Chef's Special" },
-    { id: 304, name: "Red Velvet Cupcake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/brrree.jpg", description: "Classic red velvet with cream cheese", badge: "Chef's Special" },
-    { id: 305, name: "Funfetti Cupcake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/odd.jpg", description: "Colorful sprinkle cupcake", badge: "Highly reordered" },
+    { id: 601, name: "Classic Bread Cake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/old.jpg", description: "Traditional bread cake with butter", badge: "Bestseller" },
+    { id: 602, name: "Chocolate Bread Cake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/ol.jpg", description: "Chocolate infused bread cake", badge: "Highly reordered" },
+    { id: 603, name: "Fruit Bread Cake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/brrr.jpg", description: "Fresh fruit topped bread cake", badge: "Chef's Special" },
+    { id: 604, name: "Honey Bread Cake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/brrree.jpg", description: "Sweet honey glazed bread cake", badge: "Chef's Special" },
+    { id: 605, name: "Nutty Bread Cake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/odd.jpg", description: "Crunchy nuts on soft bread cake", badge: "Highly reordered" },
   ]
 
   const sweetsProducts = [
-    { id: 301, name: "Vanilla Cupcake", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/kaju.jpg", description: "Classic vanilla cupcake with frosting", badge: "Bestseller" },
-    { id: 302, name: "Chocolate Cupcake", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/gulab.jpg", description: "Rich chocolate cupcake delight", badge: "Highly reordered" },
-    { id: 303, name: "Strawberry Cupcake", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/sw.jpg", description: "Fresh strawberry flavored cupcake", badge: "Chef's Special" },
-    { id: 304, name: "Red Velvet Cupcake", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/moti.jpg", description: "Classic red velvet with cream cheese", badge: "Chef's Special" },
-    { id: 305, name: "Funfetti Cupcake", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/ras.jpg", description: "Colorful sprinkle cupcake", badge: "Highly reordered" },
+    { id: 701, name: "Kaju Katli", price: 150, originalPrice: 300, discount: "50% OFF", rating: 4.5, image: "/kaju.jpg", description: "Classic vanilla cupcake with frosting", badge: "Bestseller" },
+    { id: 702, name: "Gulab Jamun", price: 180, originalPrice: 360, discount: "50% OFF", rating: 4.7, image: "/gulab.jpg", description: "Rich chocolate cupcake delight", badge: "Highly reordered" },
+    { id: 703, name: "Assorted Sweets", price: 200, originalPrice: 400, discount: "50% OFF", rating: 4.6, image: "/sw.jpg", description: "Fresh strawberry flavored cupcake", badge: "Chef's Special" },
+    { id: 704, name: "Moti Choor Ladoo", price: 220, originalPrice: 440, discount: "50% OFF", rating: 4.8, image: "/moti.jpg", description: "Classic red velvet with cream cheese", badge: "Chef's Special" },
+    { id: 705, name: "Rasgulla", price: 170, originalPrice: 340, discount: "50% OFF", rating: 4.4, image: "/ras.jpg", description: "Colorful sprinkle cupcake", badge: "Highly reordered" },
   ]
 
   const defaultProducts = [
-    { id: 1, name: "Fresh Fruit Cake", price: 450, originalPrice: 900, discount: "50% OFF", rating: 4.5, image: "/fruit.png", description: "Fresh seasonal fruits with cream layers", badge: "Highly reordered" },
-    { id: 2, name: "Mixed Fruit Delight", price: 550, originalPrice: 1100, discount: "50% OFF", rating: 4.7, image: "/fruit.png", description: "Mixed berries and tropical fruits", badge: "Bestseller" },
-    { id: 3, name: "Tropical Fruit Cake", price: 600, originalPrice: 1200, discount: "50% OFF", rating: 4.8, image: "/fruit.png", description: "Exotic tropical fruits with vanilla", badge: "Highly reordered" },
-    { id: 4, name: "Berry Fruit Cake", price: 500, originalPrice: 1000, discount: "50% OFF", rating: 4.6, image: "/fruit.png", description: "Fresh strawberries and blueberries", badge: "Highly reordered" },
-    { id: 5, name: "Exotic Fruit Cake", price: 700, originalPrice: 1400, discount: "50% OFF", rating: 4.9, image: "/fruit.png", description: "Premium exotic fruits selection", badge: "Chef's Special" },
+    { id: 1, name: "Fresh Fruit Cake", price: 450, originalPrice: 900, discount: "50% OFF", rating: 4.5, image: "/fruit.png", description: "Premium cashew sweet delicacy", badge: "Highly reordered" },
+    { id: 2, name: "Mixed Fruit Delight", price: 550, originalPrice: 1100, discount: "50% OFF", rating: 4.7, image: "/fruit.png", description: "Soft milk dumplings in sugar syrup", badge: "Bestseller" },
+    { id: 3, name: "Tropical Fruit Cake", price: 600, originalPrice: 1200, discount: "50% OFF", rating: 4.8, image: "/fruit.png", description: "Mixed traditional Indian sweets", badge: "Highly reordered" },
+    { id: 4, name: "Berry Fruit Cake", price: 500, originalPrice: 1000, discount: "50% OFF", rating: 4.6, image: "/fruit.png", description: "Sweet pearl-like gram flour balls", badge: "Highly reordered" },
+    { id: 5, name: "Exotic Fruit Cake", price: 700, originalPrice: 1400, discount: "50% OFF", rating: 4.9, image: "/fruit.png", description: "Spongy cottage cheese balls in syrup", badge: "Chef's Special" },
   ];
   const products =
+    apiProducts.length > 0 ? apiProducts :
     category === "fruit-cakes"
       ? fruitCakeProducts
       : category === "biscuits"
@@ -130,19 +244,102 @@ export default function ProductsPage() {
                   ? breadCakeProducts
                   : category === "sweets"
                     ? sweetsProducts
-                    : defaultProducts;
+                      : defaultProducts;
+  
+  const addToCartAPI = async (product) => {
+  try {
+    const userEmail = localStorage.getItem('email');
+    if (!userEmail) {
+      console.error('User not logged in');
+      return null;
+    }
+    const response = await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+  product_id: product.id,
+  name: product.name,
+  price: product.price,
+  originalPrice: product.originalPrice,
+  image: product.image,
+  description: product.description,
+}),
 
-  const handleAdd = (id) => setQuantities(prev => ({ ...prev, [id]: 1 }));
-  const handleIncrement = (id) => setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    });
+    window.dispatchEvent(new Event("cartUpdated"));
+
+    return await response.json();
+  } catch (error) {
+    console.error("Add to cart failed:", error);
+    return null;
+  }
+};
+
+
+  const handleAdd = async (id) => {
+  const product = products.find(p => p.id === id);
+
+  const userEmail = localStorage.getItem("email");
+  if (!userEmail) return;
+
+  await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      product_id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      description: product.description
+    })
+  });
+
+  setQuantities(prev => ({ ...prev, [id]: 1 }));
+
+  setAddedItem(product);
+  setShowPopup(true);
+};
+
+
+  const handleIncrement = (id) => {
+    setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    setCart(prev => {
+      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
   const handleDecrement = (id) => {
     setQuantities(prev => {
       const newQty = (prev[id] || 0) - 1;
       if (newQty <= 0) {
         const { [id]: _, ...rest } = prev;
+        setCart(prev => {
+          const newCart = prev.filter(item => item.id !== id);
+          localStorage.setItem('cart', JSON.stringify(newCart));
+          return newCart;
+        });
         return rest;
       }
+      setCart(prev => {
+        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        return newCart;
+      });
       return { ...prev, [id]: newQty };
     });
+  };
+
+
+
+  const handleViewCart = () => {
+    router.push('/cart');
   };
 
   // Filter products based on search query
@@ -151,97 +348,93 @@ export default function ProductsPage() {
   );
 
   const categoryBackgrounds = {
-    "fruit-cakes": "/fr.jpg",
-    "biscuits": "/Bi.jpg",
-    "chocolate-cakes": "/c.webp",
-    "cup-cakes": "/cr.jpg",
-    "donuts": "/d.jpg",
-    "birthday-cake": "/bl.jpg",
-    "bread-cake": "/old.jpg",
-    "sweets": "/kaju.jpg",
-  };
+  "fruit-cakes": "/fr.jpg",
+  "biscuits": "/Bi.jpg",
+  "chocolate-cakes": "/c.webp",
+  "cup-cakes": "/cupp.webp",
+  "donuts": "/don.jpg",
+  "birthday-cake": "/bck.jpg",
+  "bread-cake": "/old.jpg",
+  "sweets": "/kaju.jpg",
+};
 
-  const bgImage = categoryBackgrounds[category] || "/fruit.png"; // fallback image
+  const bgImage = categoryBackgrounds[category] || "/fruit.png";
+  
+  const categoryBackLabels = {
+  "fruit-cakes": "Fruit Cakes",
+  "biscuits": "Biscuit Cakes",
+  "chocolate-cakes": "Chocolate Cakes",
+  "cup-cakes": "Cup Cakes",
+  "donuts": "Donuts",
+  "birthday-cake": "Birthday Cakes",
+  "bread-cake": "Bread Cakes",
+  "sweets": "Sweets",
+};
+
+const backLabel = categoryBackLabels[category] || "Products";
+
 
 
   return (
     <Box
-      sx={{
-        minHeight: "100vh",
-        py: 5,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 3,
-        position: "relative",
-        bgcolor: "#f8f8f8",
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35))",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-          zIndex: 0,
-        },
-        "& > *": {
-          position: "relative",
-          zIndex: 1,
-        },
-      }}
+  sx={{
+    minHeight: "100vh",
+    py: 5,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 3,
+    position: "relative",
+
+    backgroundImage: `url('${bgImage}')`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      inset: 0,
+      background:
+        "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35))",
+      backdropFilter: "blur(6px)",
+      WebkitBackdropFilter: "blur(6px)",
+      zIndex: 0,
+    },
+
+    "& > *": {
+      position: "relative",
+      zIndex: 1,
+    },
+  }}
     >
-
-      {/* Category Header with Back */}
-      <Box
-        sx={{
-          width: { xs: "95%", sm: 600, md: 900 },
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          mb: 1,
-          color: "#fff",
-        }}
-      >
-        {/* Category Back Pill */}
-        <Box
-          onClick={() => router.push("/categories")}
-          sx={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 1,
-            px: 2.5,
-            py: 1,
-            borderRadius: "999px",
-            cursor: "pointer",
-            background: "rgba(255,255,255,0.18)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            color: "#fff",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-            transition: "all 0.25s ease",
-            "&:hover": {
-              background: "rgba(255,255,255,0.28)",
-              transform: "translateX(-4px)",
-            },
-          }}
-        >
-          <ArrowBackIcon fontSize="small" />
-          <Typography sx={{ fontWeight: 700 }}>
-            {category ? category.replace("-", " ") : "Categories"}
-          </Typography>
-        </Box>
-
-
-      </Box>
-
+      <Toaster position="top-right" />
+<Button
+  onClick={() => router.back()}
+  sx={{
+    alignSelf: "flex-start",
+    ml: 39,
+    mb: 1,
+    color: "#fff",
+    fontWeight: 300,
+    mb:2,
+    textTransform: "none",
+    bgcolor: "rgba(239, 227, 227, 0.4)",
+    backdropFilter: "blur(6px)",
+    borderRadius: 1,
+    px: 2,
+    "&:hover": {
+      bgcolor: "rgba(229, 223, 223, 0.6)",
+    },
+  }}
+>
+  ← {backLabel} 
+      </Button>
+      
 
 
       {/* Animated Search Bar */}
-      <Box sx={{ position: "relative", width: { xs: "95%", sm: 600, md: 900 }, mb: 1.5 }}>
+      <Box sx={{ position: "relative", width: { xs: "95%", sm: 600, md: 900 }, mb: 1, mt:-2 }}>
         <TextField
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -313,24 +506,46 @@ export default function ProductsPage() {
             <Rating value={product.rating} precision={0.1} readOnly size="small" sx={{ mb: 1 }} />
           </Box>
           <Box sx={{ width: 240, p: 1, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between" }}>
-            <Box sx={{ position: "relative", width: "100%", height: 200, borderRadius: 2, overflow: "hidden" }}>
-              <Image src={product.image} alt={product.name} fill style={{ objectFit: "cover", borderRadius: "12px" }} />
-            </Box>
+            <Box
+  sx={{
+    position: "relative",
+    width: "100%",
+    height: 200,
+    borderRadius: 2,
+    overflow: "hidden",
+  }}
+>
+  {/* ❤️ Like Button */}
+  <IconButton
+    onClick={() => toggleWishlist(product.id)}
+    sx={{
+      position: "absolute",
+      top: 8,
+      right: 8,
+      zIndex: 2,
+      bgcolor: "rgba(255,255,255,0.9)",
+      "&:hover": { bgcolor: "#fff" },
+    }}
+  >
+    {wishlist[product.id] ? (
+      <FavoriteIcon sx={{ color: "#e53935" }} />
+    ) : (
+      <FavoriteBorderIcon sx={{ color: "#e53935" }} />
+    )}
+  </IconButton>
+
+  <Image
+    src={product.image}
+    alt={product.name}
+    fill
+    style={{ objectFit: "cover", borderRadius: "12px" }}
+  />
+</Box>
+
 
             <Box sx={{ mt: 1 }}>
               {!quantities[product.id] ? (
-                <Button
-                  onClick={() => handleAdd(product.id)}
-                  sx={{
-                    bgcolor: "#c62828",
-                    color: "#fff",
-                    fontWeight: 700,
-                    px: 4,
-                    py: 0.5,
-                    borderRadius: 1,
-                    "&:hover": { bgcolor: "#a02020" }
-                  }}
-                >
+                <Button onClick={() => handleAdd(product.id)} sx={{ bgcolor: "#c62828", color: "#fff", fontWeight: 700, px: 4, py: 0.5, borderRadius: 1, "&:hover": { bgcolor: "#a02020" } }}>
                   ADD
                 </Button>
               ) : (
@@ -350,6 +565,52 @@ export default function ProductsPage() {
           </Box>
         </Card>
       ))}
+      
+      {/* Popup Notification */}
+      <Snackbar
+  open={showPopup}
+  autoHideDuration={3000}
+  onClose={() => setShowPopup(false)}
+  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+>
+  <Alert
+    onClose={() => setShowPopup(false)}
+    severity="success"
+    sx={{
+      width: "100%",
+      minHeight: "36px",          // ✅ controls popup height
+  // py: -1,                    // ✅ vertical padding
+  // px: 1,  
+      
+      alignItems: "center",
+      bgcolor: "#D32F2F",       // 🔴 RED background
+      color: "#fff",            // ⚪ white text
+      "& .MuiAlert-icon": {
+        color: "#fff",          // ⚪ white success icon
+      },
+    }}
+    action={
+      <Button
+        onClick={handleViewCart}
+        startIcon={
+          <ShoppingCartIcon sx={{ color: "#fff" }} /> // 🛒 white icon
+        }
+        sx={{
+          color: "#fff",
+          fontWeight: "300",
+          textTransform: "none",
+          "&:hover": {
+            bgcolor: "rgba(255,255,255,0.15)",
+          },
+        }}
+      >
+        View Item
+      </Button>
+    }
+  >
+    {addedItem && `${addedItem.name} added to cart!`}
+  </Alert>
+</Snackbar>
     </Box>
   );
 }

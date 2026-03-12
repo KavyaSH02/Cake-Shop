@@ -98,8 +98,11 @@ export default function Login() {
 
       toast.success(data.message || "Login successful!");
 
+      const userName = data.firstName || data.name || formData.email.split('@')[0];
+      
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("email", formData.email);
+      localStorage.setItem("userName", userName);
       localStorage.setItem("isLoggedIn", "true");
 
       setTimeout(() => {

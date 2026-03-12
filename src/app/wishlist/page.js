@@ -5,17 +5,76 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import StarIcon from "@mui/icons-material/Star";
 import { useRouter } from "next/navigation";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function WishlistPage() {
     const [wishlistItems, setWishlistItems] = useState({});
     const router = useRouter();
 
     useEffect(() => {
-        const data = JSON.parse(localStorage.getItem("wishlist")) || {};
-        setWishlistItems(data);
-    }, []);
+    fetchWishlist();
+}, []);
+
+const fetchWishlist = async () => {
+    const email = localStorage.getItem("email");
+    if (!email) return;
+
+    try {
+        const res = await fetch(
+            `http://127.0.0.1:8000/wishlist?email=${encodeURIComponent(email)}`
+        );
+
+        const data = await res.json();
+
+        // convert array → object format
+        const formatted = {};
+        data.forEach((item) => {
+            formatted[item.product_id] = item;
+        });
+
+        setWishlistItems(formatted);
+    } catch (error) {
+        console.error("Failed to fetch wishlist:", error);
+    }
+    };
+    
+
+
 
     const isEmpty = Object.keys(wishlistItems).length === 0;
+
+   const removeFromWishlist = async (productId) => {
+  const email = localStorage.getItem("email");
+  if (!email) return;
+
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:8000/wishlist/remove/${productId}?email=${encodeURIComponent(email)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const data = await res.json(); // backend response
+
+    if (res.ok) {
+      setWishlistItems((prev) => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
+
+      // ✅ show success toast
+     toast.success(data.message || "Removed ", { icon: "❌" });
+    } else {
+      toast.error(data.message || "Failed to remove item");
+    }
+
+  } catch (error) {
+    console.error("Failed to remove item:", error);
+    toast.error("Server error");
+  }
+};
 
     return (
         <Box
@@ -26,6 +85,7 @@ export default function WishlistPage() {
                 py: 4,
             }}
         >
+            <Toaster position="top-right" />
             {/* Header */}
             <Box
                 sx={{
@@ -210,15 +270,7 @@ export default function WishlistPage() {
 
                             {/* Remove */}
                             <IconButton
-                                onClick={() => {
-                                    const updated = { ...wishlistItems };
-                                    delete updated[key];
-                                    setWishlistItems(updated);
-                                    localStorage.setItem(
-                                        "wishlist",
-                                        JSON.stringify(updated)
-                                    );
-                                }}
+                                onClick={() => removeFromWishlist(key)}
                                 sx={{
                                     position: "absolute",
                                     top: 8,

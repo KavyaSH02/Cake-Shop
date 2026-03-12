@@ -7,6 +7,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
@@ -98,21 +99,31 @@ export default function CartPage() {
   };
 
   const handleRemove = async (id) => {
-    try {
-      const userEmail = localStorage.getItem('email');
-      if (!userEmail) return;
-      const res = await fetch(`http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(userEmail)}`, {
-        method: "DELETE"
-      });
-      if (res.ok) {
-        const newCart = cart.filter(item => item.id !== id);
-        setCart(newCart);
-      }
-    } catch (error) {
-      console.error("Failed to remove item:", error);
-    }
-  };
+  try {
+    const userEmail = localStorage.getItem("email");
+    if (!userEmail) return;
 
+    const res = await fetch(
+      `http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(userEmail)}`,
+      { method: "DELETE" }
+    );
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const newCart = cart.filter((item) => item.id !== id);
+      setCart(newCart);
+
+      // ✅ show backend message in toast
+      toast.success(data.message );
+    } else {
+      toast.error(data.message || "Failed to remove item");
+    }
+  } catch (error) {
+    console.error("Failed to remove item:", error);
+    toast.error("Server error");
+  }
+};
   const handleCheckout = async () => {
     try {
       const userEmail = localStorage.getItem('email');
@@ -191,7 +202,10 @@ export default function CartPage() {
   }
 
   return (
+
+    
     <Box sx={{ bgcolor: "#f8f8f8", minHeight: "100vh", py: 3 }}>
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Header */}
       <Box sx={{
         display: "flex",
