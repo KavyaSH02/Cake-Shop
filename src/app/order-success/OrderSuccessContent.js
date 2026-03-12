@@ -18,47 +18,84 @@ import PhoneAndroidIcon from "@mui/icons-material/PhoneAndroid";
 
 export default function OrderSuccessContent() {
     const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
 
     useEffect(() => {
-        if (orderId) {
-            const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-            const foundOrder = orders.find(o => o.id.toString() === orderId);
-            if (foundOrder) {
-                setOrder(foundOrder);
-            } else {
-                // Fallback order data if not found in localStorage
+        const fetchOrder = async () => {
+            if (!orderId) {
+                setLoading(false);
+                return;
+            }
+            
+            try {
+                const userEmail = localStorage.getItem('email');
+                if (!userEmail) {
+                    router.push('/login');
+                    return;
+                }
+                
+                console.log("🔍 Fetching order:", orderId);
+                const res = await fetch(`http://127.0.0.1:8000/orders/${orderId}?email=${encodeURIComponent(userEmail)}`);
+                const data = await res.json();
+                console.log("✅ Order data received:", data);
+                
+                if (res.ok && data) {
+                    setOrder(data);
+                } else {
+                    console.warn("Order not found, using fallback");
+                    setOrder({
+                        id: orderId,
+                        status: "confirmed",
+                        orderDate: new Date().toISOString(),
+                        customer: { name: "Customer", email: userEmail, phone: "" },
+                        delivery: { address: "", city: "", pincode: "", deliveryTime: "standard" },
+                        items: [],
+                        total: 0,
+                        payment: "cod"
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch order:", error);
                 setOrder({
                     id: orderId,
                     status: "confirmed",
                     orderDate: new Date().toISOString(),
-                    customer: {
-                        name: "Customer",
-                        email: "customer@example.com",
-                        phone: "1234567890"
-                    },
-                    delivery: {
-                        address: "Sample Address",
-                        city: "Sample City",
-                        pincode: "123456",
-                        deliveryTime: "standard"
-                    },
-                    items: [
-                        {
-                            id: "1",
-                            name: "Chocolate Cake",
-                            price: 299,
-                            quantity: 1
-                        }
-                    ],
-                    total: 299,
+                    customer: { name: "Customer", email: localStorage.getItem('email') || "", phone: "" },
+                    delivery: { address: "", city: "", pincode: "", deliveryTime: "standard" },
+                    items: [],
+                    total: 0,
                     payment: "cod"
                 });
+            } finally {
+                setLoading(false);
             }
-        }
-    }, [orderId]);
+        };
+        
+        fetchOrder();
+    }, [orderId, router]);
+
+    if (loading) {
+        return (
+            <Box
+                sx={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: "#f8f8f8",
+                    p: 3
+                }}
+            >
+                <Typography variant="h5" sx={{ mb: 2, color: "#666" }}>
+                    Loading order details...
+                </Typography>
+            </Box>
+        );
+    }
 
     if (!order) {
         return (
@@ -130,10 +167,10 @@ export default function OrderSuccessContent() {
 
                     <Box sx={{ mb: 2 }}>
                         <Typography variant="body2" color="text.secondary">
-                            Order ID: #{order.id}
+                            Order ID: #{order.id || order.order_id}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Order Date: {new Date(order.orderDate).toLocaleDateString()}
+                            Order Date: {new Date(order.orderDate || order.order_date || order.created_at || Date.now()).toLocaleDateString()}
                         </Typography>
                     </Box>
 
@@ -144,9 +181,9 @@ export default function OrderSuccessContent() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                             Customer Information
                         </Typography>
-                        <Typography variant="body2">{order.customer.name}</Typography>
-                        <Typography variant="body2">{order.customer.email}</Typography>
-                        <Typography variant="body2">{order.customer.phone}</Typography>
+                        <Typography variant="body2">{order.customer?.name || 'N/A'}</Typography>
+                        <Typography variant="body2">{order.customer?.email || 'N/A'}</Typography>
+                        <Typography variant="body2">{order.customer?.phone || 'N/A'}</Typography>
                     </Box>
 
                     <Divider sx={{ my: 2 }} />
@@ -156,10 +193,10 @@ export default function OrderSuccessContent() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                             Delivery Address
                         </Typography>
-                        <Typography variant="body2">{order.delivery.address}</Typography>
-                        <Typography variant="body2">{order.delivery.city}, {order.delivery.pincode}</Typography>
+                        <Typography variant="body2">{order.delivery?.address || 'N/A'}</Typography>
+                        <Typography variant="body2">{order.delivery?.city || 'N/A'}, {order.delivery?.pincode || 'N/A'}</Typography>
                         <Typography variant="body2" sx={{ mt: 1 }}>
-                            Delivery Type: {order.delivery.deliveryTime === "express" ? "Express (1 hour)" : "Standard (2-3 hours)"}
+                            Delivery Type: {order.delivery?.deliveryTime === "express" ? "Express (1 hour)" : "Standard (2-3 hours)"}
                         </Typography>
                     </Box>
 
@@ -170,7 +207,7 @@ export default function OrderSuccessContent() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                             Order Items
                         </Typography>
-                        {order.items.map((item) => (
+                        {(order.items || []).map((item) => (
                             <Box key={item.id} sx={{
                                 display: "flex",
                                 justifyContent: "space-between",
@@ -197,14 +234,14 @@ export default function OrderSuccessContent() {
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                         <Typography variant="body1">Subtotal:</Typography>
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            ₹{order.items.reduce((total, item) => total + (item.price * item.quantity), 0)}
+                            ₹{(order.items || []).reduce((total, item) => total + (item.price * item.quantity), 0)}
                         </Typography>
                     </Box>
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                         <Typography variant="body1">Delivery:</Typography>
                         <Typography variant="body1" sx={{ fontWeight: 600, color: "#4caf50" }}>
-                            {order.delivery.deliveryTime === "express" ? "₹50" : "FREE"}
+                            {order.delivery?.deliveryTime === "express" ? "₹50" : "FREE"}
                         </Typography>
                     </Box>
 
@@ -215,7 +252,7 @@ export default function OrderSuccessContent() {
                             Total Paid:
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700, color: "#c62828" }}>
-                            ₹{order.total + (order.delivery.deliveryTime === "express" ? 50 : 0)}
+                            ₹{order.total + (order.delivery?.deliveryTime === "express" ? 50 : 0)}
                         </Typography>
                     </Box>
 
@@ -312,7 +349,7 @@ export default function OrderSuccessContent() {
                         • You'll receive updates via SMS/Email
                     </Typography>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                        • Expected delivery: {order.delivery.deliveryTime === "express" ? "Within 1 hour" : "2-3 hours"}
+                        • Expected delivery: {order.delivery?.deliveryTime === "express" ? "Within 1 hour" : "2-3 hours"}
                     </Typography>
                     <Typography variant="body2">
                         • Our delivery partner will contact you before arrival

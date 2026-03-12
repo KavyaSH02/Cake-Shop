@@ -25,6 +25,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
+import { Avatar } from "@mui/material";
 
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -39,21 +40,36 @@ export default function DashboardLayout({ children }) {
     const [cartCount, setCartCount] = useState(0);
     const [wishlistCount, setWishlistCount] = useState(0);
     const [mounted, setMounted] = useState(false);
+    const [userInitial, setUserInitial] = useState("");
 
     // ✅ effect inside component
     useEffect(() => {
         setMounted(true);
+        const name = localStorage.getItem("userName");
 
-        const updateCartCount = () => {
-            const savedCart = localStorage.getItem('cart');
-            if (savedCart) {
-                const cart = JSON.parse(savedCart);
-                const total = cart.reduce((sum, item) => sum + item.quantity, 0);
-                setCartCount(total);
-            } else {
-                setCartCount(0);
-            }
-        };
+if (name) {
+    setUserInitial(name.charAt(0).toUpperCase());
+}
+
+        const updateCartCount = async () => {
+    const email = localStorage.getItem("email");
+
+    if (!email) return;
+
+    try {
+        const res = await fetch(`http://127.0.0.1:8000/cart?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (data.items) {
+            const total = data.items.reduce((sum, item) => sum + item.quantity, 0);
+            setCartCount(total);
+        } else {
+            setCartCount(0);
+        }
+    } catch (error) {
+        console.error("Cart error:", error);
+    }
+};
 
         const updateWishlistCount = () => {
             const savedWishlist = localStorage.getItem('wishlist');
@@ -177,16 +193,26 @@ export default function DashboardLayout({ children }) {
                         </IconButton>
 
                         <IconButton onClick={() => router.push("/profile")}>
-                            <PersonIcon sx={{ color: "#ff3d6c" }} />
-                        </IconButton>
+    <Avatar
+        sx={{
+            bgcolor: "#ff3d6c",
+            width: 32,
+            height: 32,
+                                    fontSize: 20,
+            fontWeight: "bold",
+        }}
+    >
+        {userInitial}
+    </Avatar>
+</IconButton>
 
-                        <Button
+                        {/* <Button
                             startIcon={<LogoutIcon />}
                             onClick={() => signOut({ callbackUrl: "/login" })}
                             sx={{ ml: 1, color: "#ff3d6c", textTransform: "none" }}
                         >
                             Logout
-                        </Button>
+                        </Button> */}
                     </Toolbar>
                 </AppBar>
 

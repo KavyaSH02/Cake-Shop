@@ -1,11 +1,38 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Paper, Box, Typography, List, ListItem, ListItemText, Rating } from "@mui/material";
 import { Star1 } from "iconsax-react";
 
 export default function CustomerReviewCard() {
-    const displayReviews = [];
-    const avgRating = "0.0";
+    const [displayReviews, setDisplayReviews] = useState([]);
+    const [avgRating, setAvgRating] = useState("0.0");
+
+    useEffect(() => {
+        const fetchFeedback = async () => {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/feedback/all");
+                const data = await res.json();
+                
+                if (res.ok && data.length > 0) {
+                    const reviews = data.map(item => ({
+                        customer: item.name,
+                        rating: item.rating,
+                        comment: item.message,
+                        date: new Date(item.created_at).toLocaleDateString()
+                    }));
+                    setDisplayReviews(reviews);
+                    
+                    const avg = (data.reduce((sum, item) => sum + item.rating, 0) / data.length).toFixed(1);
+                    setAvgRating(avg);
+                }
+            } catch (error) {
+                console.error("Failed to fetch feedback:", error);
+            }
+        };
+        
+        fetchFeedback();
+    }, []);
 
     return (
         <Paper sx={{ p: 2, borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", height: 345, display: "flex", flexDirection: "column" }}>

@@ -23,21 +23,39 @@ export default function OrderHistoryPage() {
   const router = useRouter();
 
  const handleReorder = async (orderId) => {
-  const response = await fetch(`http://127.0.0.1:8000/orders/${orderId}/reorder`, {
-    method: "POST",
-  });
-  
-  const data = await response.json();
-  setSnackbar({ open: true, message: data.message });
-  setTimeout(() => router.push("/cart"), 1500);
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/orders/${orderId}/reorder`, {
+      method: "POST",
+    });
+    const data = await response.json();
+    setSnackbar({ open: true, message: data.message || "Items added to cart!" });
+    setTimeout(() => router.push("/cart"), 1500);
+  } catch (err) {
+    console.error("Reorder failed:", err);
+    setSnackbar({ open: true, message: "Failed to reorder" });
+  }
 };
 
 
  useEffect(() => {
-  fetch("http://127.0.0.1:8000/orders")
-    .then(res => res.json())
-    .then(data => setOrders(data))
-    .catch(err => console.error("Failed to fetch orders", err));
+  const fetchOrders = async () => {
+    try {
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) {
+        setOrders([]);
+        return;
+      }
+      console.log("🔍 Fetching orders for:", userEmail);
+      const res = await fetch(`http://127.0.0.1:8000/orders?email=${encodeURIComponent(userEmail)}`);
+      const data = await res.json();
+      console.log("✅ Orders received:", data);
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      setOrders([]);
+    }
+  };
+  fetchOrders();
 }, []);
 
   const getStatusColor = (status) => {
@@ -50,7 +68,7 @@ export default function OrderHistoryPage() {
     }
   };
 
-  if (orders.length === 0) {
+  if (!orders || orders.length === 0) {
     return (
       <Box sx={{ bgcolor: "#f8f8f8", minHeight: "100vh", py: 3 }}>
         <Box sx={{
@@ -137,12 +155,12 @@ export default function OrderHistoryPage() {
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  Order #{order.id}
+                  Order #{order.id || order.order_id}
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                   <CalendarTodayIcon sx={{ fontSize: 14, color: "#666" }} />
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(order.orderDate).toLocaleDateString('en-IN', {
+                    {new Date(order.orderDate || order.order_date || order.created_at || Date.now()).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',
@@ -256,7 +274,7 @@ export default function OrderHistoryPage() {
                 onClick={() => handleReorder(order.id)}
                 sx={{ 
                   bgcolor: "#c62828", 
-                   textTransform: "none",
+                  textTransform: "none",
                   "&:hover": { bgcolor: "#a02020" }
                 }}
               >
@@ -269,11 +287,11 @@ export default function OrderHistoryPage() {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={9000}
+        autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity="success" sx={{ bgcolor: "#dba3e3", color: "#060606" }}>
+        <Alert severity="success" sx={{ bgcolor: "#4caf50", color: "white" }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

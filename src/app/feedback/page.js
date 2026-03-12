@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -25,27 +25,44 @@ export default function FeedbackPage() {
   const [rating, setRating] = useState(0);
   const [open, setOpen] = useState(true);
   const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({ name: "", email: "" });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const email = localStorage.getItem("email") || "";
+      const token = localStorage.getItem("token");
+      
+      if (!email || !token) return;
+      
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/profile?email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({ name: data.firstName, email });
+        } else {
+          setFormData({ name: "", email });
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        setFormData({ name: "", email });
+      }
+    };
+    
+    fetchUserData();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const name = e.target.name.value.trim();
-    const email = e.target.email.value.trim();
     const message = e.target.message.value.trim();
     const newErrors = {};
-
-    if (!name) newErrors.name = "Name is required";
-    if (name && name.length < 2) newErrors.name = "Name must be at least 2 characters";
-    if (name && !/^[a-zA-Z\s]+$/.test(name)) newErrors.name = "Name can only contain letters";
-    
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        newErrors.email = "Please enter a valid email address";
-      }
-    }
     
     if (!message) newErrors.message = "Message is required";
     if (message && message.length < 10) newErrors.message = "Message must be at least 10 characters";
@@ -56,9 +73,9 @@ export default function FeedbackPage() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
-    const formData = {
-      name,
-      email,
+    const feedbackData = {
+      name: formData.name,
+      email: formData.email,
       rating,
       emoji:
         rating === 1 ? "😖" :
@@ -73,7 +90,7 @@ export default function FeedbackPage() {
       const res = await fetch("http://127.0.0.1:8000/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(feedbackData),
       });
 
       const data = await res.json();
@@ -141,10 +158,15 @@ export default function FeedbackPage() {
                   name="name"
                   label="Name"
                   variant="outlined"
-                  onChange={() => setErrors(prev => ({ ...prev, name: '' }))}
-                  sx={{ mb: 2 }}
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    setErrors(prev => ({ ...prev, name: '' }));
+                  }}
+                  sx={{ mb: 2,  "& .MuiInputBase-input": { color: "#999" } }}
                   error={!!errors.name}
                   helperText={errors.name}
+                  InputProps={{ readOnly: true }}
                 />
 
                 <TextField
@@ -153,10 +175,18 @@ export default function FeedbackPage() {
                   name="email"
                   label="Email"
                   variant="outlined"
-                  onChange={() => setErrors(prev => ({ ...prev, email: '' }))}
-                  sx={{ mb: 2 }}
+                  value={formData.email}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    setErrors(prev => ({ ...prev, email: '' }));
+                  }}
+                  sx={{ 
+                    mb: 2,
+                    "& .MuiInputBase-input": { color: "#999" }
+                  }}
                   error={!!errors.email}
                   helperText={errors.email}
+                  InputProps={{ readOnly: true }}
                 />
 
                 <TextField

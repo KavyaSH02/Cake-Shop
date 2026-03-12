@@ -145,14 +145,20 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      console.log("Order response:", data);
+      console.log("✅ Backend Response:", data);
 
       if (!res.ok) throw new Error(data.detail || "Order failed");
 
-      // ✅ Redirect after backend success
-      const orderId = data.data?.order_id || data.order_id || data.id;
-      console.log("Redirecting with order ID:", orderId);
-      router.push(`/order-success?orderId=${orderId}`);
+      // Extract order ID from various possible response structures
+      const orderId = data.order_id || data.data?.order_id || data.id || data.data?.id;
+      console.log("📦 Order ID:", orderId);
+      
+      if (orderId) {
+        router.push(`/order-success?orderId=${orderId}`);
+      } else {
+        console.error("No order ID in response");
+        alert("Order placed but no order ID received");
+      }
 
     } catch (err) {
       console.error(err);
