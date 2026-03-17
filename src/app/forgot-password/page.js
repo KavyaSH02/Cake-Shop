@@ -35,18 +35,15 @@ export default function ForgotPassword() {
       });
 
       const data = await res.json();
-      console.log('Server response:', data); // Debug log
 
       if (!res.ok) {
         const errorMessage = data.detail || data.message || "Failed to send OTP";
-        console.log('Showing error:', errorMessage); // Debug log
         toast.error(errorMessage);
         return;
       }
 
       // Display the actual server message
       const successMessage = data.detail || data.message || "OTP has been sent to your email!";
-      console.log('Showing success:', successMessage); // Debug log
       toast.success(successMessage);
       setStep(2);
 
@@ -115,7 +112,7 @@ export default function ForgotPassword() {
   // -----------------------------
   // STEP 3 → RESET PASSWORD
   // -----------------------------
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.newPassword !== formData.confirmPassword) {
@@ -123,8 +120,47 @@ export default function ForgotPassword() {
       return;
     }
 
-    toast.success("Password reset successfully!");
-    router.push("/login");
+    if (formData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/forgot-password/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: formData.otp.join(""),
+          new_password: formData.newPassword
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.detail || data.message || "Failed to reset password");
+        return;
+      }
+
+      toast.success(data.message || "Password reset successfully!");
+      
+      // Clear form data
+      setFormData({
+        email: "",
+        otp: ["", "", "", "", "", ""],
+        newPassword: "",
+        confirmPassword: ""
+      });
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+
+    } catch (error) {
+      toast.error("Server error while resetting password");
+    }
   };
 
   const handleChange = (e) => {

@@ -7,6 +7,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import toast, { Toaster } from "react-hot-toast";
@@ -51,7 +52,7 @@ export default function ProductsPage() {
     if (savedCart) {
       const parsedCart = JSON.parse(savedCart);
       setCart(parsedCart);
-      
+
       // Set quantities based on existing cart for current products
       const savedQuantities = {};
       parsedCart.forEach(item => {
@@ -84,61 +85,67 @@ export default function ProductsPage() {
     if (!userEmail) return;
 
     try {
-  if (isInWishlist) {
+      if (isInWishlist) {
 
-    const res = await fetch(
-      `http://127.0.0.1:8000/wishlist/remove/${id}?email=${encodeURIComponent(userEmail)}`,
-      { method: "DELETE" }
-    );
+        const res = await fetch(
+          `http://127.0.0.1:8000/wishlist/remove/${id}?email=${encodeURIComponent(userEmail)}`,
+          { method: "DELETE" }
+        );
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (res.ok) {
-      setWishlist(prev => {
-        const newWishlist = { ...prev };
-        delete newWishlist[id];
-        return newWishlist;
-      });
+        if (res.ok) {
+          setWishlist(prev => {
+            const newWishlist = { ...prev };
+            delete newWishlist[id];
+            localStorage.setItem('wishlist', JSON.stringify(newWishlist));
+            window.dispatchEvent(new Event("wishlistUpdated"));
+            return newWishlist;
+          });
 
-      // toast.success(data.message || "Removed ");
-      toast.success(data.message || "Removed ", { icon: "❌" });
-    } else {
-      toast.error(data.message || "Failed to remove item");
-    }
+          toast.success(data.message || "Removed ", { icon: "❌" });
+        } else {
+          toast.error(data.message || "Failed to remove item");
+        }
 
-  } else {
+      } else {
 
-    const res = await fetch(
-      `http://127.0.0.1:8000/wishlist/add?email=${encodeURIComponent(userEmail)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_id: product.id,
-          name: product.name,
-          price: product.price,
-          originalPrice: product.originalPrice,
-          image: product.image,
-          description: product.description
-        })
+        const res = await fetch(
+          `http://127.0.0.1:8000/wishlist/add?email=${encodeURIComponent(userEmail)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_id: product.id,
+              name: product.name,
+              price: product.price,
+              originalPrice: product.originalPrice,
+              image: product.image,
+              description: product.description
+            })
+          }
+        );
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setWishlist(prev => {
+            const newWishlist = { ...prev, [id]: true };
+            localStorage.setItem('wishlist', JSON.stringify(newWishlist));
+            window.dispatchEvent(new Event("wishlistUpdated"));
+            return newWishlist;
+          });
+
+          toast.success(data.message || "Added ");
+        } else {
+          toast.error(data.message || "Failed to add item");
+        }
       }
-    );
 
-    const data = await res.json();
-
-    if (res.ok) {
-      setWishlist(prev => ({ ...prev, [id]: true }));
-
-      toast.success(data.message || "Added ");
-    } else {
-      toast.error(data.message || "Failed to add item");
+    } catch (error) {
+      console.error("Wishlist operation failed:", error);
+      toast.error("Server error");
     }
-  }
-
-} catch (error) {
-  console.error("Wishlist operation failed:", error);
-  toast.error("Server error");
-}
   };
 
 
@@ -228,82 +235,82 @@ export default function ProductsPage() {
   ];
   const products =
     apiProducts.length > 0 ? apiProducts :
-    category === "fruit-cakes"
-      ? fruitCakeProducts
-      : category === "biscuits"
-        ? biscuitCakeProducts
-        : category === "chocolate-cakes"
-          ? chocolateCakeProducts
-          : category === "cup-cakes"
-            ? cupCakeProducts
-            : category === "donuts"
-              ? donutProducts
-              : category === "birthday-cake"
-                ? birthdayCakeProducts
-                : category === "bread-cake"
-                  ? breadCakeProducts
-                  : category === "sweets"
-                    ? sweetsProducts
+      category === "fruit-cakes"
+        ? fruitCakeProducts
+        : category === "biscuits"
+          ? biscuitCakeProducts
+          : category === "chocolate-cakes"
+            ? chocolateCakeProducts
+            : category === "cup-cakes"
+              ? cupCakeProducts
+              : category === "donuts"
+                ? donutProducts
+                : category === "birthday-cake"
+                  ? birthdayCakeProducts
+                  : category === "bread-cake"
+                    ? breadCakeProducts
+                    : category === "sweets"
+                      ? sweetsProducts
                       : defaultProducts;
-  
+
   const addToCartAPI = async (product) => {
-  try {
-    const userEmail = localStorage.getItem('email');
-    if (!userEmail) {
-      console.error('User not logged in');
+    try {
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) {
+        console.error('User not logged in');
+        return null;
+      }
+      const response = await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
+          originalPrice: product.originalPrice,
+          image: product.image,
+          description: product.description,
+        }),
+
+      });
+      window.dispatchEvent(new Event("cartUpdated"));
+
+      return await response.json();
+    } catch (error) {
+      console.error("Add to cart failed:", error);
       return null;
     }
-    const response = await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-  product_id: product.id,
-  name: product.name,
-  price: product.price,
-  originalPrice: product.originalPrice,
-  image: product.image,
-  description: product.description,
-}),
-
-    });
-    window.dispatchEvent(new Event("cartUpdated"));
-
-    return await response.json();
-  } catch (error) {
-    console.error("Add to cart failed:", error);
-    return null;
-  }
-};
+  };
 
 
   const handleAdd = async (id) => {
-  const product = products.find(p => p.id === id);
+    const product = products.find(p => p.id === id);
 
-  const userEmail = localStorage.getItem("email");
-  if (!userEmail) return;
+    const userEmail = localStorage.getItem("email");
+    if (!userEmail) return;
 
-  await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      product_id: product.id,
-      name: product.name,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.image,
-      description: product.description
-    })
-  });
+    await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(userEmail)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        image: product.image,
+        description: product.description
+      })
+    });
 
-  setQuantities(prev => ({ ...prev, [id]: 1 }));
+    setQuantities(prev => ({ ...prev, [id]: 1 }));
 
-  setAddedItem(product);
-  setShowPopup(true);
-};
+    setAddedItem(product);
+    setShowPopup(true);
+  };
 
 
   const handleIncrement = (id) => {
@@ -348,93 +355,94 @@ export default function ProductsPage() {
   );
 
   const categoryBackgrounds = {
-  "fruit-cakes": "/fr.jpg",
-  "biscuits": "/Bi.jpg",
-  "chocolate-cakes": "/c.webp",
-  "cup-cakes": "/cupp.webp",
-  "donuts": "/don.jpg",
-  "birthday-cake": "/bck.jpg",
-  "bread-cake": "/old.jpg",
-  "sweets": "/kaju.jpg",
-};
+    "fruit-cakes": "/fr.jpg",
+    "biscuits": "/Bi.jpg",
+    "chocolate-cakes": "/c.webp",
+    "cup-cakes": "/cupp.webp",
+    "donuts": "/don.jpg",
+    "birthday-cake": "/bck.jpg",
+    "bread-cake": "/old.jpg",
+    "sweets": "/kaju.jpg",
+  };
 
   const bgImage = categoryBackgrounds[category] || "/fruit.png";
-  
-  const categoryBackLabels = {
-  "fruit-cakes": "Fruit Cakes",
-  "biscuits": "Biscuit Cakes",
-  "chocolate-cakes": "Chocolate Cakes",
-  "cup-cakes": "Cup Cakes",
-  "donuts": "Donuts",
-  "birthday-cake": "Birthday Cakes",
-  "bread-cake": "Bread Cakes",
-  "sweets": "Sweets",
-};
 
-const backLabel = categoryBackLabels[category] || "Products";
+  const categoryBackLabels = {
+    "fruit-cakes": "Fruit Cakes",
+    "biscuits": "Biscuit Cakes",
+    "chocolate-cakes": "Chocolate Cakes",
+    "cup-cakes": "Cup Cakes",
+    "donuts": "Donuts",
+    "birthday-cake": "Birthday Cakes",
+    "bread-cake": "Bread Cakes",
+    "sweets": "Sweets",
+  };
+
+  const backLabel = categoryBackLabels[category] || "Products";
 
 
 
   return (
     <Box
-  sx={{
-    minHeight: "100vh",
-    py: 5,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 3,
-    position: "relative",
+      sx={{
+        minHeight: "100vh",
+        py: 5,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        position: "relative",
 
-    backgroundImage: `url('${bgImage}')`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
 
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      inset: 0,
-      background:
-        "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35))",
-      backdropFilter: "blur(6px)",
-      WebkitBackdropFilter: "blur(6px)",
-      zIndex: 0,
-    },
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35))",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          zIndex: 0,
+        },
 
-    "& > *": {
-      position: "relative",
-      zIndex: 1,
-    },
-  }}
+        "& > *": {
+          position: "relative",
+          zIndex: 1,
+        },
+      }}
     >
-      <Toaster position="top-right" />
-<Button
-  onClick={() => router.back()}
-  sx={{
-    alignSelf: "flex-start",
-    ml: 39,
-    mb: 1,
-    color: "#fff",
-    fontWeight: 300,
-    mb:2,
-    textTransform: "none",
-    bgcolor: "rgba(239, 227, 227, 0.4)",
-    backdropFilter: "blur(6px)",
-    borderRadius: 1,
-    px: 2,
-    "&:hover": {
-      bgcolor: "rgba(229, 223, 223, 0.6)",
-    },
-  }}
->
-  ← {backLabel} 
+      <Toaster position="top-right" suppressHydrationWarning />
+      <Button
+        onClick={() => router.back()}
+        sx={{
+          alignSelf: "flex-start",
+          ml: 40,
+          mb: 1,
+          color: "#fff",
+          fontWeight: 300,
+          mb: 2,
+          textTransform: "none",
+          bgcolor: "rgba(239, 227, 227, 0.4)",
+          backdropFilter: "blur(6px)",
+          borderRadius: 1,
+          px: 2,
+          "&:hover": {
+            bgcolor: "rgba(229, 223, 223, 0.6)",
+          },
+        }}
+        suppressHydrationWarning
+      >
+        {backLabel}
       </Button>
-      
+
 
 
       {/* Animated Search Bar */}
-      <Box sx={{ position: "relative", width: { xs: "95%", sm: 600, md: 900 }, mb: 1, mt:-2 }}>
+      <Box sx={{ position: "relative", width: { xs: "95%", sm: 600, md: 900 }, mb: 1, mt: -2 }}>
         <TextField
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -451,8 +459,9 @@ const backLabel = categoryBackLabels[category] || "Products";
                 <SearchIcon />
               </InputAdornment>
             ),
-            placeholder: "", // placeholder replaced by animated label
+            placeholder: "",
           }}
+          suppressHydrationWarning
         />
 
         {/* Animated Placeholder */}
@@ -507,56 +516,57 @@ const backLabel = categoryBackLabels[category] || "Products";
           </Box>
           <Box sx={{ width: 240, p: 1, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between" }}>
             <Box
-  sx={{
-    position: "relative",
-    width: "100%",
-    height: 200,
-    borderRadius: 2,
-    overflow: "hidden",
-  }}
->
-  {/* ❤️ Like Button */}
-  <IconButton
-    onClick={() => toggleWishlist(product.id)}
-    sx={{
-      position: "absolute",
-      top: 8,
-      right: 8,
-      zIndex: 2,
-      bgcolor: "rgba(255,255,255,0.9)",
-      "&:hover": { bgcolor: "#fff" },
-    }}
-  >
-    {wishlist[product.id] ? (
-      <FavoriteIcon sx={{ color: "#e53935" }} />
-    ) : (
-      <FavoriteBorderIcon sx={{ color: "#e53935" }} />
-    )}
-  </IconButton>
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: 200,
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              {/* ❤️ Like Button */}
+              <IconButton
+                onClick={() => toggleWishlist(product.id)}
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  zIndex: 2,
+                  bgcolor: "rgba(255,255,255,0.9)",
+                  "&:hover": { bgcolor: "#fff" },
+                }}
+                suppressHydrationWarning
+              >
+                {wishlist[product.id] ? (
+                  <FavoriteIcon sx={{ color: "#e53935" }} />
+                ) : (
+                  <FavoriteBorderIcon sx={{ color: "#e53935" }} />
+                )}
+              </IconButton>
 
-  <Image
-    src={product.image}
-    alt={product.name}
-    fill
-    style={{ objectFit: "cover", borderRadius: "12px" }}
-  />
-</Box>
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                style={{ objectFit: "cover", borderRadius: "12px" }}
+              />
+            </Box>
 
 
             <Box sx={{ mt: 1 }}>
               {!quantities[product.id] ? (
-                <Button onClick={() => handleAdd(product.id)} sx={{ bgcolor: "#c62828", color: "#fff", fontWeight: 700, px: 4, py: 0.5, borderRadius: 1, "&:hover": { bgcolor: "#a02020" } }}>
+                <Button onClick={() => handleAdd(product.id)} sx={{ bgcolor: "#c62828", color: "#fff", fontWeight: 700, px: 4, py: 0.5, borderRadius: 1, "&:hover": { bgcolor: "#a02020" } }} suppressHydrationWarning>
                   ADD
                 </Button>
               ) : (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "#c62828", borderRadius: 1, px: 1 }}>
-                  <IconButton size="small" onClick={() => handleDecrement(product.id)} sx={{ color: "#fff" }}>
+                  <IconButton size="small" onClick={() => handleDecrement(product.id)} sx={{ color: "#fff" }} suppressHydrationWarning>
                     <RemoveIcon fontSize="small" />
                   </IconButton>
                   <Typography sx={{ color: "#fff", fontWeight: 700, minWidth: 24, textAlign: "center" }}>
                     {quantities[product.id]}
                   </Typography>
-                  <IconButton size="small" onClick={() => handleIncrement(product.id)} sx={{ color: "#fff" }}>
+                  <IconButton size="small" onClick={() => handleIncrement(product.id)} sx={{ color: "#fff" }} suppressHydrationWarning>
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Box>
@@ -565,52 +575,52 @@ const backLabel = categoryBackLabels[category] || "Products";
           </Box>
         </Card>
       ))}
-      
+
       {/* Popup Notification */}
       <Snackbar
-  open={showPopup}
-  autoHideDuration={3000}
-  onClose={() => setShowPopup(false)}
-  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
->
-  <Alert
-    onClose={() => setShowPopup(false)}
-    severity="success"
-    sx={{
-      width: "100%",
-      minHeight: "36px",          // ✅ controls popup height
-  // py: -1,                    // ✅ vertical padding
-  // px: 1,  
-      
-      alignItems: "center",
-      bgcolor: "#D32F2F",       // 🔴 RED background
-      color: "#fff",            // ⚪ white text
-      "& .MuiAlert-icon": {
-        color: "#fff",          // ⚪ white success icon
-      },
-    }}
-    action={
-      <Button
-        onClick={handleViewCart}
-        startIcon={
-          <ShoppingCartIcon sx={{ color: "#fff" }} /> // 🛒 white icon
-        }
-        sx={{
-          color: "#fff",
-          fontWeight: "300",
-          textTransform: "none",
-          "&:hover": {
-            bgcolor: "rgba(255,255,255,0.15)",
-          },
-        }}
+        open={showPopup}
+        autoHideDuration={3000}
+        onClose={() => setShowPopup(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        View Item
-      </Button>
-    }
-  >
-    {addedItem && `${addedItem.name} added to cart!`}
-  </Alert>
-</Snackbar>
+        <Alert
+          onClose={() => setShowPopup(false)}
+          severity="success"
+          sx={{
+            width: "100%",
+            minHeight: "36px",          // ✅ controls popup height
+            // py: -1,                    // ✅ vertical padding
+            // px: 1,  
+
+            alignItems: "center",
+            bgcolor: "#D32F2F",       // 🔴 RED background
+            color: "#fff",            // ⚪ white text
+            "& .MuiAlert-icon": {
+              color: "#fff",          // ⚪ white success icon
+            },
+          }}
+          action={
+            <Button
+              onClick={handleViewCart}
+              startIcon={
+                <ShoppingCartIcon sx={{ color: "#fff" }} /> // 🛒 white icon
+              }
+              sx={{
+                color: "#fff",
+                fontWeight: "300",
+                textTransform: "none",
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              View Item
+            </Button>
+          }
+        >
+          {addedItem && `${addedItem.name} added to cart!`}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
