@@ -24,12 +24,23 @@ export default function OrderHistoryPage() {
 
  const handleReorder = async (orderId) => {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/orders/${orderId}/reorder`, {
+    const userEmail = localStorage.getItem('email');
+    if (!userEmail) {
+      setSnackbar({ open: true, message: "Please login first" });
+      return;
+    }
+    
+    const response = await fetch(`http://127.0.0.1:8000/orders/${orderId}/reorder?email=${encodeURIComponent(userEmail)}`, {
       method: "POST",
     });
     const data = await response.json();
-    setSnackbar({ open: true, message: data.message || "Items added to cart!" });
-    setTimeout(() => router.push("/cart"), 1500);
+    
+    if (response.ok) {
+      setSnackbar({ open: true, message: data.message || "Items added to cart!" });
+      setTimeout(() => router.push("/cart"), 1500);
+    } else {
+      setSnackbar({ open: true, message: data.message || "Failed to reorder" });
+    }
   } catch (err) {
     console.error("Reorder failed:", err);
     setSnackbar({ open: true, message: "Failed to reorder" });
@@ -248,7 +259,7 @@ export default function OrderHistoryPage() {
                   Total Amount
                 </Typography>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#c62828" }}>
-                  ₹{order.total + (order.delivery.deliveryTime === "express" ? 50 : 0)}
+                  ₹{order.total + (order.delivery?.deliveryTime === "express" ? 50 : 0)}
                 </Typography>
               </Box>
             </Box>
@@ -258,7 +269,7 @@ export default function OrderHistoryPage() {
               <Button
                 size="small"
                 variant="outlined"
-                onClick={() => router.push(`/order-success?orderId=${order.id}`)}
+                onClick={() => router.push(`/order-success?orderId=${order.id || order.order_id}`)}
                 sx={{ 
                   borderColor: "#c62828", 
                   color: "#c62828",
@@ -271,7 +282,7 @@ export default function OrderHistoryPage() {
               <Button
                 size="small"
                 variant="contained"
-                onClick={() => handleReorder(order.id)}
+                onClick={() => handleReorder(order.id || order.order_id)}
                 sx={{ 
                   bgcolor: "#c62828", 
                   textTransform: "none",
