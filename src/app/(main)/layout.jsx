@@ -14,62 +14,50 @@ import {
     ListItemText,
     IconButton,
     Badge,
-    Button,
+    Avatar,
 } from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
 import CategoryIcon from "@mui/icons-material/Category";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import FavoriteIcon from "@mui/icons-material/Favorite";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import PersonIcon from "@mui/icons-material/Person";
-import LogoutIcon from "@mui/icons-material/Logout";
-import { Avatar } from "@mui/material";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 
 const SIDEBAR_WIDTH = 240;
 const HEADER_HEIGHT = 64;
 
-export default function DashboardLayout({ children }) {
+export default function MainLayout({ children }) {
     const router = useRouter();
-
-    // ✅ state inside component
     const [cartCount, setCartCount] = useState(0);
     const [wishlistCount, setWishlistCount] = useState(0);
-    const [mounted, setMounted] = useState(false);
     const [userInitial, setUserInitial] = useState("");
 
-    // ✅ effect inside component
     useEffect(() => {
-        setMounted(true);
         const name = localStorage.getItem("userName");
-
-if (name) {
-    setUserInitial(name.charAt(0).toUpperCase());
-}
+        if (name) {
+            setUserInitial(name.charAt(0).toUpperCase());
+        }
 
         const updateCartCount = async () => {
-    const email = localStorage.getItem("email");
+            const email = localStorage.getItem("email");
+            if (!email) return;
 
-    if (!email) return;
-
-    try {
-        const res = await fetch(`http://127.0.0.1:8000/cart?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-
-        if (data.items) {
-            const total = data.items.reduce((sum, item) => sum + item.quantity, 0);
-            setCartCount(total);
-        } else {
-            setCartCount(0);
-        }
-    } catch (error) {
-        console.error("Cart error:", error);
-    }
-};
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/cart?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
+                if (data.items) {
+                    const total = data.items.reduce((sum, item) => sum + item.quantity, 0);
+                    setCartCount(total);
+                } else {
+                    setCartCount(0);
+                }
+            } catch (error) {
+                console.error("Cart error:", error);
+            }
+        };
 
         const updateWishlistCount = () => {
             const savedWishlist = localStorage.getItem('wishlist');
@@ -93,10 +81,8 @@ if (name) {
         };
     }, []);
 
-
     return (
         <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#fafafa" }}>
-            {/* Sidebar */}
             <Drawer
                 variant="permanent"
                 sx={{
@@ -110,13 +96,7 @@ if (name) {
                 }}
             >
                 <Box sx={{ p: 3 }}>
-                    <Typography
-                        sx={{
-                            fontWeight: 700,
-                            fontSize: "28px",
-                            color: "#ff3d6c",
-                        }}
-                    >
+                    <Typography sx={{ fontWeight: 700, fontSize: "28px", color: "#ff3d6c" }}>
                         Sweetest!
                     </Typography>
                 </Box>
@@ -149,7 +129,6 @@ if (name) {
                         </ListItemButton>
                     </ListItem>
 
-
                     <ListItem disablePadding>
                         <ListItemButton onClick={() => router.push("/location")}>
                             <ListItemIcon>
@@ -161,9 +140,7 @@ if (name) {
                 </List>
             </Drawer>
 
-            {/* Main Area */}
             <Box sx={{ flexGrow: 1 }}>
-                {/* Header */}
                 <AppBar
                     position="fixed"
                     sx={{
@@ -177,7 +154,6 @@ if (name) {
                     }}
                 >
                     <Toolbar>
-
                         <Box sx={{ flexGrow: 1 }} />
 
                         <IconButton onClick={() => router.push("/cart")}>
@@ -193,30 +169,21 @@ if (name) {
                         </IconButton>
 
                         <IconButton onClick={() => router.push("/profile")}>
-    <Avatar
-        sx={{
-            bgcolor: "#ff3d6c",
-            width: 32,
-            height: 32,
+                            <Avatar
+                                sx={{
+                                    bgcolor: "#ff3d6c",
+                                    width: 32,
+                                    height: 32,
                                     fontSize: 20,
-            fontWeight: "bold",
-        }}
-    >
-        {userInitial}
-    </Avatar>
-</IconButton>
-
-                        {/* <Button
-                            startIcon={<LogoutIcon />}
-                            onClick={() => signOut({ callbackUrl: "/login" })}
-                            sx={{ ml: 1, color: "#ff3d6c", textTransform: "none" }}
-                        >
-                            Logout
-                        </Button> */}
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {userInitial}
+                            </Avatar>
+                        </IconButton>
                     </Toolbar>
                 </AppBar>
 
-                {/* Page Content */}
                 <Box sx={{ pt: `${HEADER_HEIGHT}px` }}>
                     {children}
                 </Box>

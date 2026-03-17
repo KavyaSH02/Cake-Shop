@@ -29,19 +29,19 @@ export default function OrderSuccessContent() {
                 setLoading(false);
                 return;
             }
-            
+
             try {
                 const userEmail = localStorage.getItem('email');
                 if (!userEmail) {
                     router.push('/login');
                     return;
                 }
-                
+
                 console.log("🔍 Fetching order:", orderId);
                 const res = await fetch(`http://127.0.0.1:8000/orders/${orderId}?email=${encodeURIComponent(userEmail)}`);
                 const data = await res.json();
                 console.log("✅ Order data received:", data);
-                
+
                 if (res.ok && data) {
                     setOrder(data);
                 } else {
@@ -73,7 +73,7 @@ export default function OrderSuccessContent() {
                 setLoading(false);
             }
         };
-        
+
         fetchOrder();
     }, [orderId, router]);
 
@@ -313,7 +313,7 @@ export default function OrderSuccessContent() {
                     <Button
                         variant="contained"
                         startIcon={<ShoppingBagIcon />}
-                        onClick={() => router.push('/products?category=fruit-cakes')}
+                        onClick={() => router.push('/categories')}
                         sx={{
                             bgcolor: "#c62828",
                             "&:hover": { bgcolor: "#a02020" },

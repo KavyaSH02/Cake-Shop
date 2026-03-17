@@ -137,7 +137,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           customer: customerInfo,
-          delivery: deliveryInfo,
+          delivery: { ...deliveryInfo, phone: customerInfo.phone },
           payment_method: paymentMethod,
           items: cart,
           total: getTotalPrice() + (deliveryInfo.deliveryTime === "express" ? 50 : 0)

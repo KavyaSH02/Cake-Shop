@@ -328,7 +328,7 @@ export default function ProductsContent() {
         onClick={() => router.back()}
         sx={{
           alignSelf: "flex-start",
-          ml: 30,
+          ml: 10,
           mb: 2,
           color: "#fff",
           fontWeight: 300,
