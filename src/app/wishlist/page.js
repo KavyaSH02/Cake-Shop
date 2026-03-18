@@ -33,6 +33,8 @@ const fetchWishlist = async () => {
         });
 
         setWishlistItems(formatted);
+        localStorage.setItem("wishlist", JSON.stringify(formatted));
+        window.dispatchEvent(new Event("wishlistUpdated"));
     } catch (error) {
         console.error("Failed to fetch wishlist:", error);
     }
@@ -42,6 +44,40 @@ const fetchWishlist = async () => {
 
 
     const isEmpty = Object.keys(wishlistItems).length === 0;
+
+   const orderNow = async (item) => {
+  const email = localStorage.getItem("email");
+  if (!email) return;
+
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(email)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: item.product_id,
+          name: item.name,
+          price: item.price,
+          originalPrice: item.originalPrice,
+          image: item.image,
+          description: item.description,
+        }),
+      }
+    );
+
+    if (res.ok) {
+      window.dispatchEvent(new Event("cartUpdated"));
+      router.push("/cart");
+    } else {
+      const data = await res.json();
+      toast.error(data.message || "Failed to add to cart");
+    }
+  } catch (error) {
+    console.error("Order now failed:", error);
+    toast.error("Server error");
+  }
+};
 
    const removeFromWishlist = async (productId) => {
   const email = localStorage.getItem("email");
@@ -61,11 +97,12 @@ const fetchWishlist = async () => {
       setWishlistItems((prev) => {
         const updated = { ...prev };
         delete updated[productId];
+        localStorage.setItem("wishlist", JSON.stringify(updated));
+        window.dispatchEvent(new Event("wishlistUpdated"));
         return updated;
       });
 
-      // ✅ show success toast
-     toast.success(data.message || "Removed ", { icon: "❌" });
+      toast.success(data.message || "Removed ", { icon: "❌" });
     } else {
       toast.error(data.message || "Failed to remove item");
     }
@@ -255,6 +292,7 @@ const fetchWishlist = async () => {
 
                                     <Button
                                         size="small"
+                                        onClick={() => orderNow(item)}
                                         sx={{
                                             bgcolor: "#ff3d6c",
                                             color: "#fff",
