@@ -18,105 +18,167 @@ export default function GalleryContent() {
   const router = useRouter();
 
   useEffect(() => {
-    const savedWishlist = localStorage.getItem('wishlist');
-    if (savedWishlist) {
-      setWishlist(JSON.parse(savedWishlist));
-    }
-
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       const parsedCart = JSON.parse(savedCart);
       setCart(parsedCart);
       const savedQuantities = {};
-      parsedCart.forEach(item => {
-        savedQuantities[item.id] = item.quantity;
-      });
+      parsedCart.forEach(item => { savedQuantities[item.id] = item.quantity; });
       setQuantities(savedQuantities);
     }
+
+    const fetchWishlist = async () => {
+      const email = localStorage.getItem('email');
+      if (!email) return;
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/wishlist?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        const formatted = {};
+        data.forEach(item => { formatted[item.product_id] = item; });
+        setWishlist(formatted);
+        localStorage.setItem('wishlist', JSON.stringify(formatted));
+        window.dispatchEvent(new Event("wishlistUpdated"));
+      } catch (error) {
+        console.error('Wishlist fetch error:', error);
+      }
+    };
+    fetchWishlist();
   }, []);
 
-  const toggleWishlist = (product) => {
-    setWishlist(prev => {
-      const newWishlist = { ...prev };
-      if (prev[product.id]) {
-        delete newWishlist[product.id];
+  const toggleWishlist = async (product) => {
+    const email = localStorage.getItem('email');
+    if (!email) return;
+    const isWishlisted = !!wishlist[product.id];
+
+    try {
+      if (isWishlisted) {
+        await fetch(`http://127.0.0.1:8000/wishlist/remove/${product.id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+        setWishlist(prev => {
+          const updated = { ...prev };
+          delete updated[product.id];
+          localStorage.setItem('wishlist', JSON.stringify(updated));
+          window.dispatchEvent(new Event("wishlistUpdated"));
+          return updated;
+        });
       } else {
-        newWishlist[product.id] = product;
+        await fetch(`http://127.0.0.1:8000/wishlist/add?email=${encodeURIComponent(email)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: product.id, name: product.name, price: product.price, image: product.image, description: '' })
+        });
+        setWishlist(prev => {
+          const updated = { ...prev, [product.id]: product };
+          localStorage.setItem('wishlist', JSON.stringify(updated));
+          window.dispatchEvent(new Event("wishlistUpdated"));
+          return updated;
+        });
       }
-      localStorage.setItem('wishlist', JSON.stringify(newWishlist));
-      return newWishlist;
-    });
+    } catch (error) {
+      console.error('Wishlist error:', error);
+    }
   };
 
-  const addToCart = (product) => {
-    setQuantities(prev => ({ ...prev, [product.id]: 1 }));
+ const handleAdd = async (id) => {
+    const product = cakeProducts.find(p => p.id === id);
+    const email = localStorage.getItem('email');
+    setQuantities(prev => ({ ...prev, [id]: 1 }));
+
+    try {
+      await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(email)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: id, name: product.name, price: product.price, image: product.image, quantity: 1 })
+      });
+    } catch (error) {
+      console.error('API Error:', error);
+    }
+
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        const newCart = prev.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-        localStorage.setItem('cart', JSON.stringify(newCart));
-        window.dispatchEvent(new Event("cartUpdated"));
-        return newCart;
-      }
+      const existing = prev.find(item => item.id === id);
+      if (existing) return prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
       const newCart = [...prev, { ...product, quantity: 1 }];
       localStorage.setItem('cart', JSON.stringify(newCart));
-      window.dispatchEvent(new Event("cartUpdated"));
       return newCart;
     });
     setAddedItem(product);
     setShowPopup(true);
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const handleIncrement = (id) => {
+  const handleIncrement = async (id) => {
     const newQty = (quantities[id] || 0) + 1;
+    const email = localStorage.getItem('email');
     setQuantities(prev => ({ ...prev, [id]: newQty }));
+
+    try {
+      await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: id, quantity: newQty })
+      });
+    } catch (error) {
+      console.error('API Error:', error);
+    }
+
     setCart(prev => {
       const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
       localStorage.setItem('cart', JSON.stringify(newCart));
-      window.dispatchEvent(new Event("cartUpdated"));
       return newCart;
     });
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const handleDecrement = (id) => {
-    setQuantities(prev => {
-      const newQty = (prev[id] || 0) - 1;
-      if (newQty <= 0) {
-        const { [id]: _, ...rest } = prev;
-        setCart(prev => {
-          const newCart = prev.filter(item => item.id !== id);
-          localStorage.setItem('cart', JSON.stringify(newCart));
-          window.dispatchEvent(new Event("cartUpdated"));
-          return newCart;
-        });
-        return rest;
+  const handleDecrement = async (id) => {
+    const newQty = (quantities[id] || 0) - 1;
+    const email = localStorage.getItem('email');
+
+    if (newQty <= 0) {
+      try {
+        await fetch(`http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('API Error:', error);
       }
+      setQuantities(prev => { const { [id]: _, ...rest } = prev; return rest; });
+      setCart(prev => {
+        const newCart = prev.filter(item => item.id !== id);
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        return newCart;
+      });
+    } else {
+      try {
+        await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: id, quantity: newQty })
+        });
+      } catch (error) {
+        console.error('API Error:', error);
+      }
+      setQuantities(prev => ({ ...prev, [id]: newQty }));
       setCart(prev => {
         const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
         localStorage.setItem('cart', JSON.stringify(newCart));
-        window.dispatchEvent(new Event("cartUpdated"));
         return newCart;
       });
-      return { ...prev, [id]: newQty };
-    });
+    }
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   const handleViewCart = () => {
+    setShowPopup(false);
     router.push('/cart');
   };
 
   const cakeProducts = [
-    { id: 1, name: "Classic White Graduation Cake", price: 900, image: "/thar1.jpg" },
-    { id: 2, name: "Monochrome Graduation Cake", price: 2000, image: "/doreman.jpg" },
-    { id: 3, name: "Sugar and Spice Twin Cake", price: 3000, image: "/bullet.jpg" },
-    { id: 4, name: "Artistic Multi-Tiered Cake", price: 1500, image: "/ballon.jpg" },
-    { id: 5, name: "Mickey Mouse Themed Cake", price: 1200, image: "/girls.jpg" },
-    { id: 6, name: "Hand-Painted Illustrations", price: 1000, image: "/panda.jpg" },
-    { id: 7, name: "Draped Floating Wedding Cake", price: 1250, image: "/hand painted.jpg" },
-    { id: 8, name: "Disney Princess Kids Cake", price: 1400, image: "/princes.jpg" },
-    { id: 9, name: "Disney Princess Kids Cake", price: 2300, image: "/car.jpg" }
+    { id: 11, name: "Classic White Graduation Cake", price: 900, image: "/thar1.jpg" },
+    { id: 22, name: "Monochrome Graduation Cake", price: 2000, image: "/doreman.jpg" },
+    { id: 33, name: "Sugar and Spice Twin Cake", price: 3000, image: "/bullet.jpg" },
+    { id: 44, name: "Artistic Multi-Tiered Cake", price: 1500, image: "/ballon.jpg" },
+    { id: 55, name: "Mickey Mouse Themed Cake", price: 1200, image: "/girls.jpg" },
+    { id: 66, name: "Hand-Painted Illustrations", price: 1000, image: "/panda.jpg" },
+    { id: 77, name: "Draped Floating Wedding Cake", price: 1250, image: "/hand painted.jpg" },
+    { id: 88, name: "Disney Princess Kids Cake", price: 1400, image: "/princes.jpg" },
+    { id: 99, name: "Disney Princess Kids Cake", price: 2300, image: "/car.jpg" }
 
   ];
 
@@ -246,7 +308,7 @@ export default function GalleryContent() {
 
                 {!quantities[product.id] ? (
                   <Button
-                    onClick={() => addToCart(product)}
+                    onClick={() => handleAdd(product.id)}
                     fullWidth
                     sx={{
                       bgcolor: "#ffb3ba",
@@ -294,7 +356,7 @@ export default function GalleryContent() {
             <>
               <Avatar src={addedItem.image} alt={addedItem.name} variant="rounded" sx={{ width: 80, height: 80 }} />
               <Typography sx={{ fontWeight: 700 }}>{addedItem.name}</Typography>
-              <Typography color="text.secondary">${addedItem.price.toFixed(2)}</Typography>
+              <Typography color="text.secondary">₹{addedItem.price}</Typography>
             </>
           )}
         </DialogContent>
