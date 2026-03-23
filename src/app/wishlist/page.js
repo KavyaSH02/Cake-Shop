@@ -102,7 +102,7 @@ const fetchWishlist = async () => {
         return updated;
       });
 
-      toast.success(data.message || "Removed ", { icon: "❌" });
+      toast.success(data.message || "Removed", { icon: false });
     } else {
       toast.error(data.message || "Failed to remove item");
     }

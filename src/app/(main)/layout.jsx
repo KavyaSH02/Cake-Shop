@@ -17,12 +17,13 @@ import {
     Avatar,
 } from "@mui/material";
 
-import HomeIcon from "@mui/icons-material/Home";
-import CategoryIcon from "@mui/icons-material/Category";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
+import AppsIcon from "@mui/icons-material/Apps";
+import DiscountIcon from "@mui/icons-material/Discount";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+
 
 import { useRouter } from "next/navigation";
 
@@ -105,38 +106,59 @@ export default function MainLayout({ children }) {
                     <ListItem disablePadding sx={{ mb: 1 }}>
                         <ListItemButton onClick={() => router.push("/dashboard")}>
                             <ListItemIcon>
-                                <HomeIcon />
+                               <HomeTwoToneIcon sx={{ fontSize: 32, color: "#908c8d" }} />
                             </ListItemIcon>
-                            <ListItemText primary="Home" />
+                           <ListItemText
+  primary="Home"
+  primaryTypographyProps={{
+    sx: { fontSize: 18, color: "#0c0c0c" }
+  }}
+/>
                         </ListItemButton>
                     </ListItem>
 
                     <ListItem disablePadding sx={{ mb: 1 }}>
                         <ListItemButton onClick={() => router.push("/categories")}>
                             <ListItemIcon>
-                                <CategoryIcon />
+                                <AppsIcon sx={{fontSize:32, color:"#908c8d"}}/>
                             </ListItemIcon>
-                            <ListItemText primary="Categories" />
+                            <ListItemText
+                            primary="Categories"  
+                            primaryTypographyProps={{
+                                sx:{fontSize:18, color:"#0c0c0c"}}}/>
                         </ListItemButton>
                     </ListItem>
 
                     <ListItem disablePadding sx={{ mb: 1 }}>
                         <ListItemButton onClick={() => router.push("/offers")}>
                             <ListItemIcon>
-                                <LocalOfferIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Offers" />
+  <DiscountIcon sx={{ fontSize: 30, color: "#908c8d" }} />
+</ListItemIcon>
+
+<ListItemText
+  primary="Offers"
+  primaryTypographyProps={{
+    sx: { fontSize: 18, color: "#0c0c0c" }
+  }}
+/>
                         </ListItemButton>
                     </ListItem>
 
-                    <ListItem disablePadding>
-                        <ListItemButton onClick={() => router.push("/location")}>
-                            <ListItemIcon>
-                                <LocationOnIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Locations" />
-                        </ListItemButton>
-                    </ListItem>
+
+                    <ListItem disablePadding sx={{ mb: 1 }}>
+  <ListItemButton onClick={() => router.push("/location")}>
+    <ListItemIcon>
+      <LocationCityIcon sx={{ fontSize: 32, color: "#908c8d" }} />
+    </ListItemIcon>
+
+    <ListItemText
+      primary="Locations"
+      primaryTypographyProps={{
+        sx: { fontSize: 18, color: "#0c0c0c" }
+      }}
+    />
+  </ListItemButton>
+</ListItem>
                 </List>
             </Drawer>
 

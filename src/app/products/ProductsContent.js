@@ -24,29 +24,35 @@ export default function ProductsContent() {
   const category = searchParams.get('category');
   const router = useRouter();
 
-  // Load existing cart from localStorage on component mount and category change
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       const parsedCart = JSON.parse(savedCart);
       setCart(parsedCart);
-
-      // Set quantities based on existing cart for current products
       const savedQuantities = {};
-      parsedCart.forEach(item => {
-        savedQuantities[item.id] = item.quantity;
-      });
+      parsedCart.forEach(item => { savedQuantities[item.id] = item.quantity; });
       setQuantities(savedQuantities);
     } else {
       setCart([]);
       setQuantities({});
     }
 
-    // Load wishlist from localStorage
-    const savedWishlist = localStorage.getItem('wishlist');
-    if (savedWishlist) {
-      setWishlist(JSON.parse(savedWishlist));
-    }
+    const fetchWishlist = async () => {
+      const email = localStorage.getItem('email');
+      if (!email) return;
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/wishlist?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        const formatted = {};
+        data.forEach(item => { formatted[item.product_id] = item; });
+        setWishlist(formatted);
+        localStorage.setItem('wishlist', JSON.stringify(formatted));
+        window.dispatchEvent(new Event("wishlistUpdated"));
+      } catch (error) {
+        console.error('Wishlist fetch error:', error);
+      }
+    };
+    fetchWishlist();
   }, [category]);
 
   const placeholders = [
@@ -56,18 +62,37 @@ export default function ProductsContent() {
     "Search cupcakes...",
     "Search donuts...",
   ];
-  const toggleWishlist = (product) => {
-    setWishlist(prev => {
-      const newWishlist = { ...prev };
-      if (prev[product.id]) {
-        delete newWishlist[product.id];
+  const toggleWishlist = async (product) => {
+    const email = localStorage.getItem('email');
+    if (!email) return;
+    const isWishlisted = !!wishlist[product.id];
+
+    try {
+      if (isWishlisted) {
+        await fetch(`http://127.0.0.1:8000/wishlist/remove/${product.id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+        setWishlist(prev => {
+          const updated = { ...prev };
+          delete updated[product.id];
+          localStorage.setItem('wishlist', JSON.stringify(updated));
+          window.dispatchEvent(new Event("wishlistUpdated"));
+          return updated;
+        });
       } else {
-        newWishlist[product.id] = product;
+        await fetch(`http://127.0.0.1:8000/wishlist/add?email=${encodeURIComponent(email)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: product.id, name: product.name, price: product.price, image: product.image, description: product.description || '' })
+        });
+        setWishlist(prev => {
+          const updated = { ...prev, [product.id]: product };
+          localStorage.setItem('wishlist', JSON.stringify(updated));
+          window.dispatchEvent(new Event("wishlistUpdated"));
+          return updated;
+        });
       }
-      localStorage.setItem('wishlist', JSON.stringify(newWishlist));
-      window.dispatchEvent(new Event("wishlistUpdated"));
-      return newWishlist;
-    });
+    } catch (error) {
+      console.error('Wishlist error:', error);
+    }
   };
 
   // Animate placeholder every 2 seconds
@@ -176,13 +201,14 @@ export default function ProductsContent() {
 
   const handleAdd = async (id) => {
     const product = products.find(p => p.id === id);
+    const email = localStorage.getItem('email');
     setQuantities(prev => ({ ...prev, [id]: 1 }));
 
     try {
-      await fetch('http://localhost:5000/api/cart/add', {
+      await fetch(`http://127.0.0.1:8000/cart/add?email=${encodeURIComponent(email)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: id, quantity: 1 })
+        body: JSON.stringify({ product_id: id, name: product.name, price: product.price, image: product.image, quantity: 1 })
       });
     } catch (error) {
       console.error('API Error:', error);
@@ -190,9 +216,7 @@ export default function ProductsContent() {
 
     setCart(prev => {
       const existing = prev.find(item => item.id === id);
-      if (existing) {
-        return prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
+      if (existing) return prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
       const newCart = [...prev, { ...product, quantity: 1 }];
       localStorage.setItem('cart', JSON.stringify(newCart));
       return newCart;
@@ -204,13 +228,14 @@ export default function ProductsContent() {
 
   const handleIncrement = async (id) => {
     const newQty = (quantities[id] || 0) + 1;
+    const email = localStorage.getItem('email');
     setQuantities(prev => ({ ...prev, [id]: newQty }));
 
     try {
-      await fetch('http://localhost:5000/api/cart/update', {
+      await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: id, quantity: newQty })
+        body: JSON.stringify({ product_id: id, quantity: newQty })
       });
     } catch (error) {
       console.error('API Error:', error);
@@ -225,39 +250,39 @@ export default function ProductsContent() {
   };
 
   const handleDecrement = async (id) => {
-    setQuantities(prev => {
-      const newQty = (prev[id] || 0) - 1;
-      if (newQty <= 0) {
-        fetch('http://localhost:5000/api/cart/remove', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId: id })
-        }).catch(error => console.error('API Error:', error));
+    const newQty = (quantities[id] || 0) - 1;
+    const email = localStorage.getItem('email');
 
-        const { [id]: _, ...rest } = prev;
-        setCart(prev => {
-          const newCart = prev.filter(item => item.id !== id);
-          localStorage.setItem('cart', JSON.stringify(newCart));
-          return newCart;
-        });
-        window.dispatchEvent(new Event("cartUpdated"));
-        return rest;
+    if (newQty <= 0) {
+      try {
+        await fetch(`http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('API Error:', error);
       }
-
-      fetch('http://localhost:5000/api/cart/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: id, quantity: newQty })
-      }).catch(error => console.error('API Error:', error));
-
+      setQuantities(prev => { const { [id]: _, ...rest } = prev; return rest; });
+      setCart(prev => {
+        const newCart = prev.filter(item => item.id !== id);
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        return newCart;
+      });
+    } else {
+      try {
+        await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: id, quantity: newQty })
+        });
+      } catch (error) {
+        console.error('API Error:', error);
+      }
+      setQuantities(prev => ({ ...prev, [id]: newQty }));
       setCart(prev => {
         const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
         localStorage.setItem('cart', JSON.stringify(newCart));
         return newCart;
       });
-      window.dispatchEvent(new Event("cartUpdated"));
-      return { ...prev, [id]: newQty };
-    });
+    }
+    window.dispatchEvent(new Event("cartUpdated"));
   };
 
   const handleViewCart = () => {
