@@ -25,17 +25,23 @@ export default function ProductsContent() {
   const router = useRouter();
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      const parsedCart = JSON.parse(savedCart);
-      setCart(parsedCart);
-      const savedQuantities = {};
-      parsedCart.forEach(item => { savedQuantities[item.id] = item.quantity; });
-      setQuantities(savedQuantities);
-    } else {
-      setCart([]);
-      setQuantities({});
-    }
+    const fetchCart = async () => {
+      const email = localStorage.getItem('email');
+      if (!email) return;
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/cart?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        const items = data.items || [];
+        setCart(items);
+        const savedQuantities = {};
+        items.forEach(item => { savedQuantities[item.id] = item.quantity; });
+        setQuantities(savedQuantities);
+        localStorage.setItem('cart', JSON.stringify(items));
+      } catch (error) {
+        console.error('Cart fetch error:', error);
+      }
+    };
+    fetchCart();
 
     const fetchWishlist = async () => {
       const email = localStorage.getItem('email');
@@ -226,63 +232,36 @@ export default function ProductsContent() {
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const handleIncrement = async (id) => {
-    const newQty = (quantities[id] || 0) + 1;
+  const handleIncrement = (id) => {
     const email = localStorage.getItem('email');
+    const newQty = (quantities[id] || 0) + 1;
     setQuantities(prev => ({ ...prev, [id]: newQty }));
+    fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_id: id, quantity: newQty })
+    }).catch(err => console.error('API Error:', err));
+    window.dispatchEvent(new Event('cartUpdated'));
+  };
 
-    try {
-      await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
+  const handleDecrement = (id) => {
+    const email = localStorage.getItem('email');
+    const newQty = (quantities[id] || 0) - 1;
+    if (newQty <= 0) {
+      setQuantities(prev => { const { [id]: _, ...rest } = prev; return rest; });
+      setCart(prev => prev.filter(item => item.id !== id));
+      fetch(`http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' })
+        .catch(err => console.error('API Error:', err));
+    } else {
+      setQuantities(prev => ({ ...prev, [id]: newQty }));
+      setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
+      fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ product_id: id, quantity: newQty })
-      });
-    } catch (error) {
-      console.error('API Error:', error);
+      }).catch(err => console.error('API Error:', err));
     }
-
-    setCart(prev => {
-      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
-      localStorage.setItem('cart', JSON.stringify(newCart));
-      return newCart;
-    });
-    window.dispatchEvent(new Event("cartUpdated"));
-  };
-
-  const handleDecrement = async (id) => {
-    const newQty = (quantities[id] || 0) - 1;
-    const email = localStorage.getItem('email');
-
-    if (newQty <= 0) {
-      try {
-        await fetch(`http://127.0.0.1:8000/cart/remove/${id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
-      } catch (error) {
-        console.error('API Error:', error);
-      }
-      setQuantities(prev => { const { [id]: _, ...rest } = prev; return rest; });
-      setCart(prev => {
-        const newCart = prev.filter(item => item.id !== id);
-        localStorage.setItem('cart', JSON.stringify(newCart));
-        return newCart;
-      });
-    } else {
-      try {
-        await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(email)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ product_id: id, quantity: newQty })
-        });
-      } catch (error) {
-        console.error('API Error:', error);
-      }
-      setQuantities(prev => ({ ...prev, [id]: newQty }));
-      setCart(prev => {
-        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
-        localStorage.setItem('cart', JSON.stringify(newCart));
-        return newCart;
-      });
-    }
-    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const handleViewCart = () => {
@@ -479,19 +458,19 @@ export default function ProductsContent() {
             </Box>
 
             <Box sx={{ mt: 1 }}>
-              {!quantities[product.id] ? (
+              {!(quantities[product.id] > 0) ? (
                 <Button onClick={() => handleAdd(product.id)} sx={{ bgcolor: "#c62828", color: "#fff", fontWeight: 700, px: 4, py: 0.5, borderRadius: 1, "&:hover": { bgcolor: "#a02020" } }}>
                   ADD
                 </Button>
               ) : (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, bgcolor: "#c62828", borderRadius: 1, px: 1 }}>
-                  <IconButton size="small" onClick={() => handleDecrement(product.id)} sx={{ color: "#fff" }}>
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDecrement(product.id); }} sx={{ color: "#fff" }}>
                     <RemoveIcon fontSize="small" />
                   </IconButton>
                   <Typography sx={{ color: "#fff", fontWeight: 700, minWidth: 24, textAlign: "center" }}>
                     {quantities[product.id]}
                   </Typography>
-                  <IconButton size="small" onClick={() => handleIncrement(product.id)} sx={{ color: "#fff" }}>
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleIncrement(product.id); }} sx={{ color: "#fff" }}>
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Box>
@@ -501,7 +480,7 @@ export default function ProductsContent() {
         </Card>
       ))}
 
-      {/* Mini centered dialog for added item */}
+      {/* Center popup for added item */}
       <Dialog
         open={showPopup}
         onClose={() => setShowPopup(false)}

@@ -313,34 +313,47 @@ export default function ProductsPage() {
   };
 
 
-  const handleIncrement = (id) => {
-    setQuantities(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-    setCart(prev => {
-      const newCart = prev.map(item => item.id === id ? { ...item, quantity: item.quantity + 1 } : item);
-      localStorage.setItem('cart', JSON.stringify(newCart));
-      return newCart;
-    });
+   const handleIncrement = async (id) => {
+    try {
+      const item = cart.find(item => item.id === id);
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) return;
+      const res = await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(userEmail)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: id, quantity: item.quantity + 1 })
+      });
+      if (res.ok) {
+        const newCart = cart.map(item =>
+          item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+        setCart(newCart);
+      }
+    } catch (error) {
+      console.error("Failed to update cart:", error);
+    }
   };
 
-  const handleDecrement = (id) => {
-    setQuantities(prev => {
-      const newQty = (prev[id] || 0) - 1;
-      if (newQty <= 0) {
-        const { [id]: _, ...rest } = prev;
-        setCart(prev => {
-          const newCart = prev.filter(item => item.id !== id);
-          localStorage.setItem('cart', JSON.stringify(newCart));
-          return newCart;
-        });
-        return rest;
-      }
-      setCart(prev => {
-        const newCart = prev.map(item => item.id === id ? { ...item, quantity: newQty } : item);
-        localStorage.setItem('cart', JSON.stringify(newCart));
-        return newCart;
+  const handleDecrement = async (id) => {
+    try {
+      const item = cart.find(item => item.id === id);
+      const newQuantity = Math.max(1, item.quantity - 1);
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) return;
+      const res = await fetch(`http://127.0.0.1:8000/cart/update?email=${encodeURIComponent(userEmail)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: id, quantity: newQuantity })
       });
-      return { ...prev, [id]: newQty };
-    });
+      if (res.ok) {
+        const newCart = cart.map(item =>
+          item.id === id ? { ...item, quantity: newQuantity } : item
+        );
+        setCart(newCart);
+      }
+    } catch (error) {
+      console.error("Failed to update cart:", error);
+    }
   };
 
 
@@ -623,4 +636,4 @@ export default function ProductsPage() {
       </Snackbar>
     </Box>
   );
-}
+}///
